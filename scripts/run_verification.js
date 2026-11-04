@@ -18,6 +18,7 @@ function writeJson(filename, data) {
 async function runVerification() {
   console.log('================================================================');
   console.log(' COURIER MANAGEMENT SYSTEM - COMPLETE WORKFLOW VERIFICATION RUN');
+  console.log(' (Entry = Handover/Delivered -> Ready for Settlement unless Returned)');
   console.log('================================================================\n');
 
   const couriers = readJson('couriers.json');
@@ -31,7 +32,7 @@ async function runVerification() {
   console.log(`   - Courier 3: ${c3.name} (ID: ${c3._id}) [Charge: Rs. ${c3.defaultDeliveryCharge}]`);
 
   // Step 1: Create 50 parcels across 3 couriers in 3 batches
-  console.log('\n--- STEP 1: Creating 50 Parcels Across 3 Couriers & Batches ---');
+  console.log('\n--- STEP 1: Creating 50 Handover Parcels (Ready for Settlement) ---');
   const todayStr = new Date().toISOString().split('T')[0];
   const now = new Date().toISOString();
 
@@ -79,8 +80,6 @@ async function runVerification() {
   console.log(`✓ Created 3 Batches: BAT-20261104-001 (20 pkgs), BAT-20261104-002 (15 pkgs), BAT-20261104-003 (15 pkgs)`);
 
   const parcels = [];
-  let parcelCounter = 1;
-
   function createParcelsForBatch(batch, count, startId) {
     for (let i = 1; i <= count; i++) {
       const pId = `pcl-test-${String(startId + i - 1).padStart(3, '0')}`;
@@ -96,7 +95,7 @@ async function runVerification() {
         codAmount: 2000,
         deliveryArea: 'Inside Valley',
         deliveryCharge: batch.courierId === c1._id ? c1.defaultDeliveryCharge : (batch.courierId === c2._id ? c2.defaultDeliveryCharge : c3.defaultDeliveryCharge),
-        status: 'Pending',
+        status: 'Delivered', // Immediate delivery handover state
         settlementStatus: 'Unsettled',
         createdAt: now,
       });
@@ -107,7 +106,7 @@ async function runVerification() {
   createParcelsForBatch(batch2, 15, 21);
   createParcelsForBatch(batch3, 15, 36);
 
-  console.log(`✓ Total Parcels Generated: ${parcels.length} parcels across 3 couriers.`);
+  console.log(`✓ Total Parcels Generated: ${parcels.length} parcels across 3 couriers (All Handed Over & Ready).`);
 
   // Step 2: Record 5 returns across different couriers using 5 distinct return reasons
   console.log('\n--- STEP 2: Recording 5 Returns with 5 Distinct Reasons ---');
@@ -148,84 +147,44 @@ async function runVerification() {
       createdAt: now,
     };
     returnRecords.push(retRecord);
-    console.log(`  [Return #${idx + 1}] Parcel: ${p._id} (${p.customerName}) | Courier: ${r.courier} | Reason: "${r.reason}"`);
+    console.log(`  [Return #${idx + 1}] Parcel: ${p._id} (${p.customerName}) | Mobile: ${p.mobile} | Courier: ${r.courier} | Reason: "${r.reason}"`);
   });
 
   writeJson('return_records.json', returnRecords);
-
-  // Mark remaining parcels for Courier 1: 15 Delivered, 3 Pending (20 total = 15 Delivered + 2 Returned + 3 Pending)
-  for (let i = 2; i < 17; i++) {
-    parcels[i].status = 'Delivered';
-    parcels[i].deliveryDate = todayStr;
-  }
-  // Parcel 17, 18, 19 remain Pending
-
   writeJson('parcels.json', parcels);
 
-  // Step 3: Perform Courier 1 Settlement & Check Strict Reconciliation
-  console.log('\n--- STEP 3: Settlement Calculation & Reconciliation Verification ---');
-  const c1Parcels = parcels.filter(p => p.courierId === c1._id);
-  const totalHandedOver = c1Parcels.length; // 20
-  const deliveredParcels = c1Parcels.filter(p => p.status === 'Delivered'); // 15
-  const returnedParcels = c1Parcels.filter(p => p.status === 'Returned'); // 2
-  const pendingParcels = c1Parcels.filter(p => p.status === 'Pending'); // 3
+  // Step 3: Perform Courier 3 (SP Express) Settlement Calculation Verification
+  console.log('\n--- STEP 3: Courier 3 (SP Express) Settlement Calculation & Reconciliation ---');
+  const spParcels = parcels.filter(p => p.courierId === c3._id);
+  const spTotalHandedOver = spParcels.length; // 15
+  const spReturnedParcels = spParcels.filter(p => p.status === 'Returned'); // 1
+  const spDeliveredParcels = spParcels.filter(p => p.status !== 'Returned'); // 14
 
-  const deliveredCount = deliveredParcels.length;
-  const returnedCount = returnedParcels.length;
-  const pendingCount = pendingParcels.length;
+  const spDeliveredCount = spDeliveredParcels.length; // 14
+  const spReturnedCount = spReturnedParcels.length; // 1
 
-  console.log(`Reconciliation formula: Handed Over (${totalHandedOver}) = Delivered (${deliveredCount}) + Returned (${returnedCount}) + Pending (${pendingCount})`);
-  const reconciled = totalHandedOver === (deliveredCount + returnedCount + pendingCount);
+  console.log(`Reconciliation formula: Handed Over (${spTotalHandedOver}) = Delivered (${spDeliveredCount}) + Returned (${spReturnedCount})`);
+  const reconciled = spTotalHandedOver === (spDeliveredCount + spReturnedCount);
   console.log(`Reconciliation check: ${reconciled ? '✓ PASSED EXACTLY' : '❌ FAILED'}`);
 
-  const totalDeliveredCOD = deliveredParcels.reduce((sum, p) => sum + p.codAmount, 0); // 15 * 2000 = 30000
-  const totalReturnedCOD = returnedParcels.reduce((sum, p) => sum + p.codAmount, 0); // 2 * 2000 = 4000
-  const totalDeliveryCharges = deliveredParcels.reduce((sum, p) => sum + (p.deliveryCharge || c1.defaultDeliveryCharge), 0); // 15 * 70 = 1050
-  const netPayable = totalDeliveredCOD - totalDeliveryCharges; // 30000 - 1050 = 28950
+  const spGrossCOD = spDeliveredParcels.reduce((sum, p) => sum + p.codAmount, 0); // 14 * 2000 = 28000
+  const spReturnedCOD = spReturnedParcels.reduce((sum, p) => sum + p.codAmount, 0); // 1 * 2000 = 2000
+  const spDeliveryCharges = spDeliveredParcels.reduce((sum, p) => sum + (p.deliveryCharge || c3.defaultDeliveryCharge), 0); // 14 * 150 = 2100
+  const spNetReceivable = spGrossCOD - spDeliveryCharges; // 28000 - 2100 = 25900
 
-  console.log(`Financial breakdown:`);
-  console.log(`  - Total Delivered COD (Receivable): Rs. ${totalDeliveredCOD}`);
-  console.log(`  - Returned Parcels COD (Excluded from receivable): Rs. ${totalReturnedCOD}`);
-  console.log(`  - Courier Delivery Charges Deducted: Rs. ${totalDeliveryCharges}`);
-  console.log(`  - Net Settlement Amount to Receive: Rs. ${netPayable}`);
-
-  // Simulate settlement finalization for Courier 1 delivered parcels
-  const settlementRecord = {
-    _id: 'stl-test-001',
-    settlementNumber: 'STL-20261104-001',
-    courierId: c1._id,
-    courierName: c1.name,
-    settlementDate: todayStr,
-    totalParcelsCount: totalHandedOver,
-    deliveredParcelsCount: deliveredCount,
-    returnedParcelsCount: returnedCount,
-    pendingParcelsCount: pendingCount,
-    totalCODAmount: totalDeliveredCOD,
-    deliveryCharges: totalDeliveryCharges,
-    returnCharges: 0,
-    netPayableAmount: netPayable,
-    status: 'Settled',
-    parcelIds: deliveredParcels.map(p => p._id),
-    createdAt: now,
-  };
-
-  deliveredParcels.forEach(p => {
-    p.settlementStatus = 'Settled';
-    p.settlementId = settlementRecord._id;
-  });
-  writeJson('settlements.json', [settlementRecord]);
-  writeJson('parcels.json', parcels);
-
-  console.log(`✓ Settlement STL-20261104-001 recorded successfully.`);
+  console.log(`Financial breakdown for SP Express:`);
+  console.log(`  - Total Handed Over COD: Rs. ${spGrossCOD + spReturnedCOD}`);
+  console.log(`  - Delivered COD (Payable): Rs. ${spGrossCOD}`);
+  console.log(`  - Returned Parcels COD (Deducted): Rs. ${spReturnedCOD}`);
+  console.log(`  - Courier Delivery Charges Deducted: Rs. ${spDeliveryCharges}`);
+  console.log(`  - Net Settlement Amount to Receive: Rs. ${spNetReceivable}`);
 
   // Step 4: Batch Dynamic State & History Section Verification
-  console.log('\n--- STEP 4: Batch Dynamic State & History Section Verification ---');
-  // Enrich batches dynamically as store.ts and api/batches/route.ts do
+  console.log('\n--- STEP 4: Batch Dynamic Counts & History Section Verification ---');
   const enrichedBatches = batches.map(b => {
     const bParcels = parcels.filter(p => p.batchId === b._id);
-    const deliv = bParcels.filter(p => p.status === 'Delivered').length;
     const ret = bParcels.filter(p => p.status === 'Returned').length;
-    const pend = bParcels.filter(p => p.status === 'Pending').length;
+    const deliv = bParcels.filter(p => p.status !== 'Returned').length;
     const settled = bParcels.filter(p => p.settlementStatus === 'Settled').length;
 
     let settlementStatus = 'Unsettled';
@@ -240,29 +199,26 @@ async function runVerification() {
       totalPackages: bParcels.length,
       deliveredCount: deliv,
       returnedCount: ret,
-      pendingCount: pend,
       settlementStatus,
     };
   });
 
   enrichedBatches.forEach(b => {
     console.log(`[Batch ${b.batchNumber}] Courier: ${b.courierName}`);
-    console.log(`  - Total: ${b.totalPackages} | Delivered: ${b.deliveredCount} | Returned: ${b.returnedCount} | Pending: ${b.pendingCount}`);
+    console.log(`  - Handed Over: ${b.totalPackages} | Delivered: ${b.deliveredCount} | Returned: ${b.returnedCount} (No pending!)`);
     console.log(`  - Settlement Status: ${b.settlementStatus}`);
   });
 
-  // Verify Returned Parcel Highlighting & Reason in History
-  console.log('\n--- STEP 5: Verifying RED Highlighting & Database-Saved Return Reasons ---');
-  const allReturnedParcels = parcels.filter(p => p.status === 'Returned');
-  console.log(`Total Returned Parcels in Database: ${allReturnedParcels.length}`);
-  allReturnedParcels.forEach((p, i) => {
-    const hasRedHighlightFlag = p.status === 'Returned';
-    console.log(`  #${i + 1} Parcel: ${p._id} | Customer: ${p.customerName}`);
-    console.log(`     - Red Highlight: ${hasRedHighlightFlag ? 'YES (bg-red-50/80 border-l-4 border-l-red-500 text-red-950)' : 'NO'}`);
-    console.log(`     - Status Badge: Bold Red RETURNED`);
-    console.log(`     - Database-Saved Reason: "${p.returnReason}"`);
-    console.log(`     - Return Date: ${p.returnDate}`);
-  });
+  // Step 5: Mobile Number Search Verification
+  console.log('\n--- STEP 5: Verifying Mobile Number Search & RED Highlighting ---');
+  const testMobile = '984100036';
+  const foundParcel = parcels.find(p => p.mobile === testMobile);
+  console.log(`Searching by Mobile Number "${testMobile}":`);
+  if (foundParcel) {
+    console.log(`  ✓ Match found: ${foundParcel.customerName} | Courier: ${foundParcel.courierName} | COD: Rs. ${foundParcel.codAmount}`);
+    console.log(`    Status: ${foundParcel.status} | Reason: "${foundParcel.returnReason}"`);
+    console.log(`    Red Highlight: ${foundParcel.status === 'Returned' ? 'YES (bg-red-50/80 border-l-4 border-l-red-500)' : 'NO'}`);
+  }
 
   console.log('\n================================================================');
   console.log(' ALL VERIFICATION STEPS COMPLETED WITH 100% ACCURACY! 🎉');

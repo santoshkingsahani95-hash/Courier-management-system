@@ -354,9 +354,9 @@ export default function ReturnsPage() {
     }
   }
 
-  // Revert return status back to pending
+  // Revert return status back to active delivered
   async function handleRevert(parcelId: string, customerName: string) {
-    if (!confirm(`Revert return for "${customerName}"? Package will move back to Pending delivery.`)) {
+    if (!confirm(`Revert return for "${customerName}"? Package will move back to Active Handover / Ready for Settlement.`)) {
       return;
     }
 
@@ -364,7 +364,7 @@ export default function ReturnsPage() {
       const res = await fetch("/api/returns", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ parcelId, newStatus: "Pending" }),
+        body: JSON.stringify({ parcelId, newStatus: "Delivered" }),
       });
 
       if (res.ok) {

@@ -125,42 +125,45 @@ export default function Navbar({ userName = "Admin", userRole = "admin" }: Navba
                       <span>Parcels ({searchResults.parcels.length})</span>
                     </div>
                     <div className="space-y-1 mt-1">
-                      {searchResults.parcels.slice(0, 5).map((p) => (
+                      {searchResults.parcels.slice(0, 8).map((p) => (
                         <div
                           key={p._id}
-                          className="p-2.5 hover:bg-slate-50 rounded-lg text-xs border border-slate-100 transition-colors"
+                          className="p-3 hover:bg-slate-50 rounded-xl text-xs border border-slate-100 transition-colors space-y-1.5"
                         >
                           <div className="flex justify-between items-start font-medium">
-                            <span className="text-slate-800 font-semibold">{p.customerName}</span>
-                            <span className="text-blue-600 font-bold">{formatNPR(p.codAmount)}</span>
+                            <span className="text-slate-900 font-bold">{p.customerName}</span>
+                            <span className="text-blue-600 font-extrabold font-mono">{formatNPR(p.codAmount)}</span>
                           </div>
-                          <div className="flex justify-between items-center text-[11px] text-slate-600 mt-1">
-                            <span className="font-mono font-bold text-blue-700">
+                          <div className="flex justify-between items-center text-[11px] text-slate-600">
+                            <span className="font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
                               📞 {p.mobile}
                             </span>
-                            {p.totalOrdersForMobile > 1 ? (
-                              <span className="bg-blue-50 text-blue-700 text-[10px] font-bold px-1.5 py-0.5 rounded border border-blue-200">
-                                {p.totalOrdersForMobile} orders on record
-                              </span>
-                            ) : (
-                              <span className="font-mono text-slate-500 text-[10px]">
-                                {p.batchNumber || "Direct"}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex justify-between items-center text-[10px] text-slate-400 mt-1">
-                            <span>{p.courierName}</span>
-                            <span
-                              className={`px-1.5 py-0.2 rounded font-semibold ${
-                                p.status === "Delivered"
-                                  ? "bg-emerald-50 text-emerald-700"
-                                  : p.status === "Returned"
-                                  ? "bg-red-50 text-red-700"
-                                  : "bg-amber-50 text-amber-700"
-                              }`}
-                            >
-                              {p.status}
+                            <span className="font-mono text-slate-500 text-[10px]">
+                              {p.batchNumber || "Batch Handover"}
                             </span>
+                          </div>
+                          <div className="flex justify-between items-center text-[10px] text-slate-500 pt-0.5">
+                            <span className="font-medium text-slate-700">{p.courierName}</span>
+                            <div className="flex items-center space-x-1.5">
+                              {p.status === "Returned" ? (
+                                <span className="px-2 py-0.5 rounded font-extrabold bg-red-100 text-red-800 border border-red-200 uppercase text-[9px]">
+                                  RETURNED {p.returnReason ? `(${p.returnReason})` : ""}
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] uppercase">
+                                  DELIVERED / SETTLEMENT READY
+                                </span>
+                              )}
+                              <span
+                                className={`px-1.5 py-0.5 rounded text-[9px] font-semibold ${
+                                  p.settlementStatus === "Settled"
+                                    ? "bg-slate-200 text-slate-700"
+                                    : "bg-amber-50 text-amber-700 border border-amber-200"
+                                }`}
+                              >
+                                {p.settlementStatus || "Unsettled"}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       ))}

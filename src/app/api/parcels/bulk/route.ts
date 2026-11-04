@@ -55,7 +55,7 @@ export async function POST(request: Request) {
         p.returnCharge !== undefined && p.returnCharge !== "" && !isNaN(Number(p.returnCharge))
           ? Number(p.returnCharge)
           : courier?.defaultReturnCharge ?? 0,
-      status: p.status || "Pending",
+      status: p.status || "Delivered",
       remarks: p.remarks || "",
       createdBy: currentUser?.name || "Staff",
     }));

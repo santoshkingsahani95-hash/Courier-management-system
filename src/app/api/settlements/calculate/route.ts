@@ -31,13 +31,22 @@ export async function POST(request: Request) {
       return true;
     });
 
-    const deliveredParcels = eligibleParcels.filter((p) => p.status === "Delivered");
+    // In this business model: Every handed over parcel is delivered / payable unless returned!
     const returnedParcels = eligibleParcels.filter((p) => p.status === "Returned");
-    const pendingParcels = eligibleParcels.filter((p) => p.status === "Pending");
+    const deliveredParcels = eligibleParcels.filter((p) => p.status !== "Returned");
 
     const grossCOD = deliveredParcels.reduce((sum, p) => sum + (p.codAmount || 0), 0);
+    const returnedCOD = returnedParcels.reduce((sum, p) => sum + (p.codAmount || 0), 0);
+    const totalHandoverCOD = grossCOD + returnedCOD;
+
     const deliveryCharges = deliveredParcels.reduce(
-      (sum, p) => sum + (p.actualDeliveryCharge ?? p.deliveryCharge ?? 0),
+      (sum, p) =>
+        sum +
+        (p.actualDeliveryCharge !== undefined && p.actualDeliveryCharge !== null
+          ? p.actualDeliveryCharge
+          : p.deliveryCharge !== undefined && p.deliveryCharge !== null
+          ? p.deliveryCharge
+          : courier.defaultDeliveryCharge ?? 0),
       0
     );
     // No charge for returns
@@ -74,10 +83,12 @@ export async function POST(request: Request) {
     return NextResponse.json({
       courier,
       totalHandedOver: eligibleParcels.length,
+      totalHandoverCOD,
       eligibleParcelsCount: eligibleParcels.length,
       deliveredCount: deliveredParcels.length,
       returnedCount: returnedParcels.length,
-      pendingCount: pendingParcels.length,
+      returnedCOD,
+      pendingCount: 0,
       returnReasonsSummary,
       grossCOD,
       deliveryCharges,

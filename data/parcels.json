@@ -13,7 +13,7 @@
     "deliveryCharge": 70,
     "status": "Returned",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z",
+    "createdAt": "2026-11-04T10:19:08.969Z",
     "returnReason": "Customer unavailable",
     "returnDate": "2026-11-04",
     "returnedBy": "Admin",
@@ -35,7 +35,7 @@
     "deliveryCharge": 70,
     "status": "Returned",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z",
+    "createdAt": "2026-11-04T10:19:08.969Z",
     "returnReason": "Wrong address",
     "returnDate": "2026-11-04",
     "returnedBy": "Admin",
@@ -56,10 +56,8 @@
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 70,
     "status": "Delivered",
-    "settlementStatus": "Settled",
-    "createdAt": "2026-11-04T09:50:17.753Z",
-    "deliveryDate": "2026-11-04",
-    "settlementId": "stl-test-001"
+    "settlementStatus": "Unsettled",
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-004",
@@ -74,10 +72,8 @@
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 70,
     "status": "Delivered",
-    "settlementStatus": "Settled",
-    "createdAt": "2026-11-04T09:50:17.753Z",
-    "deliveryDate": "2026-11-04",
-    "settlementId": "stl-test-001"
+    "settlementStatus": "Unsettled",
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-005",
@@ -92,10 +88,8 @@
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 70,
     "status": "Delivered",
-    "settlementStatus": "Settled",
-    "createdAt": "2026-11-04T09:50:17.753Z",
-    "deliveryDate": "2026-11-04",
-    "settlementId": "stl-test-001"
+    "settlementStatus": "Unsettled",
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-006",
@@ -110,10 +104,8 @@
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 70,
     "status": "Delivered",
-    "settlementStatus": "Settled",
-    "createdAt": "2026-11-04T09:50:17.753Z",
-    "deliveryDate": "2026-11-04",
-    "settlementId": "stl-test-001"
+    "settlementStatus": "Unsettled",
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-007",
@@ -128,10 +120,8 @@
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 70,
     "status": "Delivered",
-    "settlementStatus": "Settled",
-    "createdAt": "2026-11-04T09:50:17.753Z",
-    "deliveryDate": "2026-11-04",
-    "settlementId": "stl-test-001"
+    "settlementStatus": "Unsettled",
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-008",
@@ -146,10 +136,8 @@
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 70,
     "status": "Delivered",
-    "settlementStatus": "Settled",
-    "createdAt": "2026-11-04T09:50:17.753Z",
-    "deliveryDate": "2026-11-04",
-    "settlementId": "stl-test-001"
+    "settlementStatus": "Unsettled",
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-009",
@@ -164,10 +152,8 @@
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 70,
     "status": "Delivered",
-    "settlementStatus": "Settled",
-    "createdAt": "2026-11-04T09:50:17.753Z",
-    "deliveryDate": "2026-11-04",
-    "settlementId": "stl-test-001"
+    "settlementStatus": "Unsettled",
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-010",
@@ -182,10 +168,8 @@
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 70,
     "status": "Delivered",
-    "settlementStatus": "Settled",
-    "createdAt": "2026-11-04T09:50:17.753Z",
-    "deliveryDate": "2026-11-04",
-    "settlementId": "stl-test-001"
+    "settlementStatus": "Unsettled",
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-011",
@@ -200,10 +184,8 @@
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 70,
     "status": "Delivered",
-    "settlementStatus": "Settled",
-    "createdAt": "2026-11-04T09:50:17.753Z",
-    "deliveryDate": "2026-11-04",
-    "settlementId": "stl-test-001"
+    "settlementStatus": "Unsettled",
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-012",
@@ -218,10 +200,8 @@
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 70,
     "status": "Delivered",
-    "settlementStatus": "Settled",
-    "createdAt": "2026-11-04T09:50:17.753Z",
-    "deliveryDate": "2026-11-04",
-    "settlementId": "stl-test-001"
+    "settlementStatus": "Unsettled",
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-013",
@@ -236,10 +216,8 @@
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 70,
     "status": "Delivered",
-    "settlementStatus": "Settled",
-    "createdAt": "2026-11-04T09:50:17.753Z",
-    "deliveryDate": "2026-11-04",
-    "settlementId": "stl-test-001"
+    "settlementStatus": "Unsettled",
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-014",
@@ -254,10 +232,8 @@
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 70,
     "status": "Delivered",
-    "settlementStatus": "Settled",
-    "createdAt": "2026-11-04T09:50:17.753Z",
-    "deliveryDate": "2026-11-04",
-    "settlementId": "stl-test-001"
+    "settlementStatus": "Unsettled",
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-015",
@@ -272,10 +248,8 @@
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 70,
     "status": "Delivered",
-    "settlementStatus": "Settled",
-    "createdAt": "2026-11-04T09:50:17.753Z",
-    "deliveryDate": "2026-11-04",
-    "settlementId": "stl-test-001"
+    "settlementStatus": "Unsettled",
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-016",
@@ -290,10 +264,8 @@
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 70,
     "status": "Delivered",
-    "settlementStatus": "Settled",
-    "createdAt": "2026-11-04T09:50:17.753Z",
-    "deliveryDate": "2026-11-04",
-    "settlementId": "stl-test-001"
+    "settlementStatus": "Unsettled",
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-017",
@@ -308,10 +280,8 @@
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 70,
     "status": "Delivered",
-    "settlementStatus": "Settled",
-    "createdAt": "2026-11-04T09:50:17.753Z",
-    "deliveryDate": "2026-11-04",
-    "settlementId": "stl-test-001"
+    "settlementStatus": "Unsettled",
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-018",
@@ -325,9 +295,9 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 70,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-019",
@@ -341,9 +311,9 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 70,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-020",
@@ -357,9 +327,9 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 70,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-021",
@@ -375,7 +345,7 @@
     "deliveryCharge": 150,
     "status": "Returned",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z",
+    "createdAt": "2026-11-04T10:19:08.969Z",
     "returnReason": "Customer refused parcel",
     "returnDate": "2026-11-04",
     "returnedBy": "Admin",
@@ -397,7 +367,7 @@
     "deliveryCharge": 150,
     "status": "Returned",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z",
+    "createdAt": "2026-11-04T10:19:08.969Z",
     "returnReason": "Customer phone switched off",
     "returnDate": "2026-11-04",
     "returnedBy": "Admin",
@@ -417,9 +387,9 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 150,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-024",
@@ -433,9 +403,9 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 150,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-025",
@@ -449,9 +419,9 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 150,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-026",
@@ -465,9 +435,9 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 150,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-027",
@@ -481,9 +451,9 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 150,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-028",
@@ -497,9 +467,9 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 150,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-029",
@@ -513,9 +483,9 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 150,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-030",
@@ -529,9 +499,9 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 150,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-031",
@@ -545,9 +515,9 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 150,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-032",
@@ -561,9 +531,9 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 150,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-033",
@@ -577,9 +547,9 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 150,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-034",
@@ -593,9 +563,9 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 150,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-035",
@@ -609,9 +579,9 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 150,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-036",
@@ -627,7 +597,7 @@
     "deliveryCharge": 150,
     "status": "Returned",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z",
+    "createdAt": "2026-11-04T10:19:08.969Z",
     "returnReason": "Delivery unsuccessful",
     "returnDate": "2026-11-04",
     "returnedBy": "Admin",
@@ -647,9 +617,9 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 150,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-038",
@@ -663,9 +633,9 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 150,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-039",
@@ -679,9 +649,9 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 150,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-040",
@@ -695,9 +665,9 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 150,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-041",
@@ -711,9 +681,9 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 150,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-042",
@@ -727,9 +697,9 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 150,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-043",
@@ -743,9 +713,9 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 150,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-044",
@@ -759,9 +729,9 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 150,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-045",
@@ -775,9 +745,9 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 150,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-046",
@@ -791,9 +761,9 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 150,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-047",
@@ -807,9 +777,9 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 150,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-048",
@@ -823,9 +793,9 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 150,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-049",
@@ -839,9 +809,9 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 150,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   },
   {
     "_id": "pcl-test-050",
@@ -855,8 +825,8 @@
     "codAmount": 2000,
     "deliveryArea": "Inside Valley",
     "deliveryCharge": 150,
-    "status": "Pending",
+    "status": "Delivered",
     "settlementStatus": "Unsettled",
-    "createdAt": "2026-11-04T09:50:17.753Z"
+    "createdAt": "2026-11-04T10:19:08.969Z"
   }
 ]

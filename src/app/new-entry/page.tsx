@@ -390,7 +390,7 @@ export default function BulkEntryPage() {
           serviceArea: r.deliveryArea,
           deliveryCharge: Number(r.deliveryCharge) || 0,
           remarks: r.remarks.trim(),
-          status: "Pending",
+          status: "Delivered",
         })),
       };
 

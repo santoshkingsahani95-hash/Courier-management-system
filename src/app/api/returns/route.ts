@@ -376,7 +376,7 @@ export async function PUT(request: Request) {
   try {
     const currentUser = await getCurrentUser();
     const body = await request.json();
-    const { parcelId, newStatus = "Pending" } = body;
+    const { parcelId, newStatus = "Delivered" } = body;
 
     if (!parcelId) {
       return NextResponse.json({ error: "Parcel ID is required" }, { status: 400 });

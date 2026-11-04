@@ -24,6 +24,7 @@ import {
   RefreshCw,
   Phone,
   ArrowRight,
+  RotateCcw,
 } from "lucide-react";
 import { formatNPR, formatDate, formatDateTime } from "@/lib/utils";
 
@@ -411,7 +412,7 @@ export default function BatchesPage() {
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search Batch ID, Courier, notes..."
+              placeholder="Search by Mobile Number, Batch ID, Courier..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -484,29 +485,28 @@ export default function BatchesPage() {
               ) : (
                 filteredBatches.map((b) => {
                   const total = b.totalPackages || 0;
-                  const delivered = b.deliveredCount || 0;
                   const returned = b.returnedCount || 0;
-                  const pending = b.pendingCount ?? (total - delivered - returned);
+                  const delivered = b.deliveredCount ?? (total - returned);
 
                   let statusBadge = (
-                    <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">
-                      <Clock className="w-3 h-3" />
-                      <span>Pending</span>
+                    <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800">
+                      <CheckCircle2 className="w-3 h-3" />
+                      <span>Ready for Settlement</span>
                     </span>
                   );
 
-                  if (total > 0 && delivered === total) {
+                  if (b.settlementStatus === "Settled") {
                     statusBadge = (
                       <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">
                         <CheckCircle2 className="w-3 h-3" />
-                        <span>Delivered</span>
+                        <span>Settled</span>
                       </span>
                     );
-                  } else if (delivered > 0 || returned > 0) {
+                  } else if (returned > 0) {
                     statusBadge = (
-                      <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800">
-                        <Layers className="w-3 h-3" />
-                        <span>Partially Delivered</span>
+                      <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800">
+                        <RotateCcw className="w-3 h-3" />
+                        <span>Returns Recorded</span>
                       </span>
                     );
                   }
@@ -551,15 +551,14 @@ export default function BatchesPage() {
                       {/* Status breakdown pills */}
                       <td className="py-3.5 px-4 text-center">
                         <div className="inline-flex items-center space-x-1.5 text-[10px] font-semibold">
-                          <span className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                          <span className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-mono font-bold">
                             {delivered} del
                           </span>
-                          <span className="text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded">
-                            {returned} ret
-                          </span>
-                          <span className="text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">
-                            {pending} pend
-                          </span>
+                          {returned > 0 && (
+                            <span className="text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded font-mono font-bold">
+                              {returned} ret
+                            </span>
+                          )}
                         </div>
                       </td>
 

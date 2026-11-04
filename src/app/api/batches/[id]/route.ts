@@ -27,9 +27,9 @@ export async function GET(
       );
     }
 
-    const deliveredCount = batchParcels.filter((p) => p.status === "Delivered").length;
     const returnedCount = batchParcels.filter((p) => p.status === "Returned").length;
-    const pendingCount = batchParcels.filter((p) => p.status === "Pending").length;
+    const deliveredCount = batchParcels.filter((p) => p.status !== "Returned" && p.status !== "Cancelled").length;
+    const pendingCount = 0;
     const totalCOD = batchParcels.reduce((sum, p) => sum + (p.codAmount || 0), 0);
     const settledCount = batchParcels.filter((p) => p.settlementStatus === "Settled").length;
     let settlementStatus: "Settled" | "Partially Settled" | "Unsettled" = "Unsettled";

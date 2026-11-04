@@ -319,9 +319,10 @@ export async function getBatches(): Promise<IBatch[]> {
       (p) => p.batchId === b._id || p.batchNumber === b.batchNumber
     );
     const totalPackages = bParcels.length > 0 ? bParcels.length : (b.totalPackages || 0);
-    const deliveredCount = bParcels.filter((p) => p.status === "Delivered").length;
     const returnedCount = bParcels.filter((p) => p.status === "Returned").length;
-    const pendingCount = bParcels.filter((p) => p.status === "Pending").length;
+    // All handed over parcels are delivered/payable unless returned!
+    const deliveredCount = bParcels.filter((p) => p.status !== "Returned" && p.status !== "Cancelled").length;
+    const pendingCount = 0;
     const totalCOD = bParcels.reduce((sum, p) => sum + (p.codAmount || 0), 0);
     const settledCount = bParcels.filter((p) => p.settlementStatus === "Settled").length;
 
@@ -721,8 +722,8 @@ export async function createSettlement(data: {
       p.status !== "Cancelled"
   );
 
-  const deliveredParcels = eligibleParcels.filter((p) => p.status === "Delivered");
   const returnedParcels = eligibleParcels.filter((p) => p.status === "Returned");
+  const deliveredParcels = eligibleParcels.filter((p) => p.status !== "Returned");
 
   const grossCOD = deliveredParcels.reduce((sum, p) => sum + (p.codAmount || 0), 0);
   const deliveryCharges = deliveredParcels.reduce(

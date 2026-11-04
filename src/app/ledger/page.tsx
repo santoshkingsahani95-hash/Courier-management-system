@@ -11,15 +11,34 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
+  Plus,
+  Pencil,
+  Trash2,
+  X,
 } from "lucide-react";
 import { formatNPR, formatDate } from "@/lib/utils";
+import { useUserRole } from "@/lib/useUserRole";
 
 export default function LedgerPage() {
+  const { user, role, isAdminOrManager, isStaff } = useUserRole();
   const [entries, setEntries] = useState<any[]>([]);
   const [couriers, setCouriers] = useState<any[]>([]);
   const [selectedCourierId, setSelectedCourierId] = useState("all");
   const [summary, setSummary] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Manual Adjustment Modal State (Admin & Manager)
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newEntryCourierId, setNewEntryCourierId] = useState("");
+  const [newEntryDate, setNewEntryDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [newEntryType, setNewEntryType] = useState("Manual Adjustment");
+  const [newEntryDesc, setNewEntryDesc] = useState("");
+  const [newEntryDebit, setNewEntryDebit] = useState<number | "">("");
+  const [newEntryCredit, setNewEntryCredit] = useState<number | "">("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Edit Entry State (Admin & Manager)
+  const [editingEntry, setEditingEntry] = useState<any | null>(null);
 
   useEffect(() => {
     fetchCouriers();
@@ -33,7 +52,11 @@ export default function LedgerPage() {
     try {
       const res = await fetch("/api/couriers");
       const d = await res.json();
-      setCouriers(d.couriers || []);
+      const list = d.couriers || [];
+      setCouriers(list);
+      if (list.length > 0 && !newEntryCourierId) {
+        setNewEntryCourierId(list[0]._id);
+      }
     } catch (e) {
       console.error(e);
     }
@@ -57,6 +80,109 @@ export default function LedgerPage() {
     }
   }
 
+  // Delete Ledger Entry - Admin & Manager only
+  async function handleDeleteEntry(id: string, refId: string) {
+    if (!isAdminOrManager) {
+      alert("Permission denied: Only Admin and Manager can delete ledger entries.");
+      return;
+    }
+    if (!confirm(`Are you sure you want to delete this ledger entry "${refId}"?`)) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/ledger?id=${id}`, { method: "DELETE" });
+      if (res.ok) {
+        alert("Ledger entry deleted successfully.");
+        fetchLedger();
+      } else {
+        const d = await res.json();
+        alert(d.error || "Failed to delete ledger entry");
+      }
+    } catch (e: any) {
+      alert(e.message || "Failed to delete ledger entry");
+    }
+  }
+
+  // Add Manual Entry - Admin & Manager only
+  async function handleAddManualEntry(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newEntryCourierId) {
+      alert("Please select a courier");
+      return;
+    }
+    if (!newEntryDesc.trim()) {
+      alert("Please enter a description for the ledger entry");
+      return;
+    }
+    const debitNum = Number(newEntryDebit) || 0;
+    const creditNum = Number(newEntryCredit) || 0;
+    if (debitNum <= 0 && creditNum <= 0) {
+      alert("Please enter either a Debit or Credit amount");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/ledger", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          courierId: newEntryCourierId,
+          transactionDate: newEntryDate,
+          transactionType: newEntryType,
+          description: newEntryDesc.trim(),
+          debit: debitNum,
+          credit: creditNum,
+        }),
+      });
+
+      if (res.ok) {
+        setShowAddModal(false);
+        setNewEntryDesc("");
+        setNewEntryDebit("");
+        setNewEntryCredit("");
+        fetchLedger();
+      } else {
+        const d = await res.json();
+        alert(d.error || "Failed to add ledger entry");
+      }
+    } catch (err: any) {
+      alert(err.message || "Failed to add ledger entry");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  // Save Edited Entry - Admin & Manager only
+  async function handleSaveEditedEntry() {
+    if (!editingEntry) return;
+    try {
+      const res = await fetch("/api/ledger", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          _id: editingEntry._id,
+          updates: {
+            transactionDate: editingEntry.transactionDate,
+            description: editingEntry.description,
+            debit: Number(editingEntry.debit) || 0,
+            credit: Number(editingEntry.credit) || 0,
+          },
+        }),
+      });
+
+      if (res.ok) {
+        setEditingEntry(null);
+        fetchLedger();
+      } else {
+        const d = await res.json();
+        alert(d.error || "Failed to update ledger entry");
+      }
+    } catch (e: any) {
+      alert(e.message || "Failed to update ledger entry");
+    }
+  }
+
   const selectedCourier = couriers.find((c) => c._id === selectedCourierId);
 
   return (
@@ -75,15 +201,31 @@ export default function LedgerPage() {
           </p>
         </div>
 
-        <a
-          href={`/api/export?type=ledger&courierId=${selectedCourierId}`}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors border border-slate-200"
-        >
-          <Download className="w-4 h-4 text-slate-500" />
-          <span>Export Ledger Excel</span>
-        </a>
+        <div className="flex items-center space-x-2">
+          {isAdminOrManager ? (
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors shadow-xs"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Adjustment Entry</span>
+            </button>
+          ) : (
+            <span className="text-[11px] bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1.5 rounded-lg font-medium">
+              Staff Mode (Read-only Ledger)
+            </span>
+          )}
+
+          <a
+            href={`/api/export?type=ledger&courierId=${selectedCourierId}`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors border border-slate-200"
+          >
+            <Download className="w-4 h-4 text-slate-500" />
+            <span>Export Ledger Excel</span>
+          </a>
+        </div>
       </div>
 
       {/* Courier Selector & Outstanding Balance Banner */}
@@ -165,19 +307,20 @@ export default function LedgerPage() {
                 <th className="py-3 px-4 text-right">Debit (Owed to Us)</th>
                 <th className="py-3 px-4 text-right">Credit (Paid/Charges)</th>
                 <th className="py-3 px-4 text-right">Running Balance</th>
+                {isAdminOrManager && <th className="py-3 px-4 text-center">Action</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">
+                  <td colSpan={isAdminOrManager ? 9 : 8} className="py-12 text-center text-slate-400">
                     <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-blue-600" />
                     <span>Loading ledger...</span>
                   </td>
                 </tr>
               ) : entries.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">
+                  <td colSpan={isAdminOrManager ? 9 : 8} className="py-12 text-center text-slate-400">
                     No ledger transactions recorded yet.
                   </td>
                 </tr>
@@ -221,6 +364,29 @@ export default function LedgerPage() {
                     <td className="py-3.5 px-4 text-right font-extrabold text-amber-800 text-sm">
                       {formatNPR(e.runningBalance)}
                     </td>
+
+                    {isAdminOrManager && (
+                      <td className="py-3.5 px-4 text-center">
+                        <div className="flex items-center justify-center space-x-1">
+                          <button
+                            onClick={() => setEditingEntry({ ...e })}
+                            className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded"
+                            title="Edit Ledger Entry"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleDeleteEntry(e._id, e.referenceId || e.description)
+                            }
+                            className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded"
+                            title="Delete Ledger Entry"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
@@ -228,6 +394,220 @@ export default function LedgerPage() {
           </table>
         </div>
       </div>
+
+      {/* ADD MANUAL ADJUSTMENT MODAL (Admin & Manager) */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in zoom-in-95">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-200">
+              <h3 className="font-extrabold text-slate-900 text-sm">
+                Add Manual Ledger Adjustment
+              </h3>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddManualEntry} className="space-y-3 py-4 text-xs">
+              <div>
+                <label className="block text-slate-600 font-bold mb-1">Select Courier *</label>
+                <select
+                  value={newEntryCourierId}
+                  onChange={(e) => setNewEntryCourierId(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold"
+                  required
+                >
+                  {couriers.map((c) => (
+                    <option key={c._id} value={c._id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">Transaction Date</label>
+                  <input
+                    type="date"
+                    value={newEntryDate}
+                    onChange={(e) => setNewEntryDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">Type</label>
+                  <select
+                    value={newEntryType}
+                    onChange={(e) => setNewEntryType(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold"
+                  >
+                    <option value="Manual Adjustment">Manual Adjustment</option>
+                    <option value="Debit Note">Debit Note (Courier Owes)</option>
+                    <option value="Credit Note">Credit Note (Discount/Refund)</option>
+                    <option value="Opening Balance">Opening Balance</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-bold mb-1">Description / Reason *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Courier late fee waiver, manual adjustment, etc."
+                  value={newEntryDesc}
+                  onChange={(e) => setNewEntryDesc(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">
+                    Debit (Rs.) <span className="font-normal text-slate-400">(Owed to us)</span>
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="0"
+                    value={newEntryDebit}
+                    onChange={(e) =>
+                      setNewEntryDebit(e.target.value === "" ? "" : Number(e.target.value))
+                    }
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-mono font-bold text-blue-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">
+                    Credit (Rs.) <span className="font-normal text-slate-400">(Paid / Reduced)</span>
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="0"
+                    value={newEntryCredit}
+                    onChange={(e) =>
+                      setNewEntryCredit(e.target.value === "" ? "" : Number(e.target.value))
+                    }
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-mono font-bold text-emerald-600"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold"
+                >
+                  {isSubmitting ? "Recording..." : "Record Entry"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT ENTRY MODAL (Admin & Manager) */}
+      {editingEntry && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in zoom-in-95">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-200">
+              <h3 className="font-extrabold text-slate-900 text-sm">
+                Edit Ledger Entry ({editingEntry.referenceId || editingEntry.courierName})
+              </h3>
+              <button
+                onClick={() => setEditingEntry(null)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 py-4 text-xs">
+              <div>
+                <label className="block text-slate-600 font-bold mb-1">Transaction Date</label>
+                <input
+                  type="date"
+                  value={editingEntry.transactionDate}
+                  onChange={(e) =>
+                    setEditingEntry({ ...editingEntry, transactionDate: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-bold mb-1">Description</label>
+                <input
+                  type="text"
+                  value={editingEntry.description}
+                  onChange={(e) =>
+                    setEditingEntry({ ...editingEntry, description: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">Debit (Rs.)</label>
+                  <input
+                    type="number"
+                    value={editingEntry.debit}
+                    onChange={(e) =>
+                      setEditingEntry({
+                        ...editingEntry,
+                        debit: Number(e.target.value) || 0,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-mono font-bold text-blue-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">Credit (Rs.)</label>
+                  <input
+                    type="number"
+                    value={editingEntry.credit}
+                    onChange={(e) =>
+                      setEditingEntry({
+                        ...editingEntry,
+                        credit: Number(e.target.value) || 0,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-mono font-bold text-emerald-600"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100 text-xs">
+              <button
+                onClick={() => setEditingEntry(null)}
+                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEditedEntry}
+                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

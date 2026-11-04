@@ -17,8 +17,10 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { formatNPR } from "@/lib/utils";
+import { useUserRole } from "@/lib/useUserRole";
 
 export default function CouriersPage() {
+  const { user, role, isAdminOrManager, isStaff } = useUserRole();
   const [couriers, setCouriers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -140,6 +142,10 @@ export default function CouriersPage() {
   }
 
   async function handleDeleteCourier(id: string) {
+    if (!isAdminOrManager) {
+      alert("Permission denied: Staff members cannot delete couriers. Only Admin and Manager are authorized.");
+      return;
+    }
     if (!confirm("Are you sure you want to delete this courier? Any associated records will also be removed.")) return;
     try {
       const res = await fetch(`/api/couriers/${id}`, { method: "DELETE" });
@@ -233,22 +239,26 @@ export default function CouriersPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-1">
-                    <button
-                      onClick={() => handleOpenEdit(c)}
-                      className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-50 rounded-lg transition-colors"
-                      title="Edit Courier"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteCourier(c._id)}
-                      className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Delete Courier"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                  {isAdminOrManager ? (
+                    <div className="flex items-center space-x-1">
+                      <button
+                        onClick={() => handleOpenEdit(c)}
+                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-50 rounded-lg transition-colors"
+                        title="Edit Courier (Admin & Manager)"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCourier(c._id)}
+                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Delete Courier (Admin & Manager)"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="text-[10px] text-slate-400 italic">Read-only (Staff)</span>
+                  )}
                 </div>
 
                 {/* Contact & Charge Information */}

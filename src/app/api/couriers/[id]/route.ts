@@ -12,6 +12,7 @@ import {
   addAuditLog,
 } from "@/lib/store";
 import { getCurrentUser } from "@/lib/auth";
+import { checkEditOrDeletePermission } from "@/lib/permissions";
 
 export async function GET(
   request: Request,
@@ -81,6 +82,11 @@ export async function PUT(
 ) {
   try {
     const currentUser = await getCurrentUser();
+    const perm = checkEditOrDeletePermission(currentUser);
+    if (!perm.allowed) {
+      return NextResponse.json({ error: perm.error }, { status: perm.status });
+    }
+
     const body = await request.json();
     const existing = await getCourierById(params.id);
 
@@ -115,6 +121,11 @@ export async function DELETE(
 ) {
   try {
     const currentUser = await getCurrentUser();
+    const perm = checkEditOrDeletePermission(currentUser);
+    if (!perm.allowed) {
+      return NextResponse.json({ error: perm.error }, { status: perm.status });
+    }
+
     const result = await deleteCourier(params.id);
 
     if (!result.success) {

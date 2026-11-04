@@ -12,3 +12,4 @@ parcels.forEach(p => {
 });
 fs.writeFileSync(pPath, JSON.stringify(parcels, null, 2), 'utf8');
 console.log(`Updated ${count} pending parcels to Delivered in data/parcels.json`);
+

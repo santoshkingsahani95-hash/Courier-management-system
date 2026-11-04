@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { getBatchById, getParcels } from "@/lib/store";
+import { getBatchById, getParcels, updateBatch, deleteBatch, addAuditLog } from "@/lib/store";
 import { objectCache } from "@/lib/cache";
+import { getCurrentUser } from "@/lib/auth";
+import { checkEditOrDeletePermission } from "@/lib/permissions";
 
 export async function GET(
   request: Request,
@@ -54,6 +56,69 @@ export async function GET(
 
     objectCache.set(`batch:detail:${batch._id}`, result, 5 * 60 * 1000, ["batches"]);
     return NextResponse.json(result);
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function PUT(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const currentUser = await getCurrentUser();
+    const perm = checkEditOrDeletePermission(currentUser);
+    if (!perm.allowed) {
+      return NextResponse.json({ error: perm.error }, { status: perm.status });
+    }
+
+    const body = await request.json();
+    const updated = await updateBatch(params.id, body);
+
+    if (!updated) {
+      return NextResponse.json({ error: "Batch not found" }, { status: 404 });
+    }
+
+    await addAuditLog({
+      userId: currentUser?._id,
+      userName: currentUser?.name || "Manager",
+      action: "UPDATE_BATCH",
+      entityType: "Batch",
+      entityId: params.id,
+      newValue: body,
+    });
+
+    return NextResponse.json({ success: true, batch: updated });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const currentUser = await getCurrentUser();
+    const perm = checkEditOrDeletePermission(currentUser);
+    if (!perm.allowed) {
+      return NextResponse.json({ error: perm.error }, { status: perm.status });
+    }
+
+    const result = await deleteBatch(params.id);
+    if (!result.success) {
+      return NextResponse.json({ error: result.message || "Failed to delete batch" }, { status: 400 });
+    }
+
+    await addAuditLog({
+      userId: currentUser?._id,
+      userName: currentUser?.name || "Manager",
+      action: "DELETE_BATCH",
+      entityType: "Batch",
+      entityId: params.id,
+    });
+
+    return NextResponse.json({ success: true, message: "Batch and associated records deleted" });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

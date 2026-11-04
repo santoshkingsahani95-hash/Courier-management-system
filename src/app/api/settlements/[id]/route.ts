@@ -5,7 +5,11 @@ import {
   getCompanySettings,
   getParcels,
   getPayments,
+  deleteSettlement,
+  addAuditLog,
 } from "@/lib/store";
+import { getCurrentUser } from "@/lib/auth";
+import { checkEditOrDeletePermission } from "@/lib/permissions";
 
 export async function GET(
   request: Request,
@@ -40,6 +44,37 @@ export async function GET(
       parcels: settlementParcels,
       payments: settlementPayments,
     });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+// Delete / Cancel Settlement - Authorized for Admin and Manager only
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const currentUser = await getCurrentUser();
+    const perm = checkEditOrDeletePermission(currentUser);
+    if (!perm.allowed) {
+      return NextResponse.json({ error: perm.error }, { status: perm.status });
+    }
+
+    const result = await deleteSettlement(params.id);
+    if (!result.success) {
+      return NextResponse.json({ error: result.message || "Failed to delete settlement" }, { status: 400 });
+    }
+
+    await addAuditLog({
+      userId: currentUser?._id,
+      userName: currentUser?.name || "Manager",
+      action: "DELETE_SETTLEMENT",
+      entityType: "Settlement",
+      entityId: params.id,
+    });
+
+    return NextResponse.json({ success: true, message: "Settlement cancelled and parcels reverted to unsettled" });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

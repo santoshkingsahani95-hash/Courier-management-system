@@ -9,8 +9,11 @@ import {
   getCourierById,
   saveReturnRecord,
   getReturnRecords,
+  deleteReturnRecord,
+  updateReturnRecord,
 } from "@/lib/store";
 import { getCurrentUser } from "@/lib/auth";
+import { checkEditOrDeletePermission } from "@/lib/permissions";
 
 export async function GET(request: Request) {
   try {
@@ -371,15 +374,36 @@ export async function POST(request: Request) {
   }
 }
 
-// Revert return status if marked by mistake
+// Revert or Edit return status - Authorized for Admin and Manager only
 export async function PUT(request: Request) {
   try {
     const currentUser = await getCurrentUser();
+    const perm = checkEditOrDeletePermission(currentUser);
+    if (!perm.allowed) {
+      return NextResponse.json({ error: perm.error }, { status: perm.status });
+    }
+
     const body = await request.json();
+
+    // 1. Edit return reason / details
+    if (body.returnRecordId && body.updates) {
+      const updated = await updateReturnRecord(body.returnRecordId, body.updates);
+      await addAuditLog({
+        userId: currentUser?._id,
+        userName: currentUser?.name || "Manager",
+        action: "UPDATE_RETURN_RECORD",
+        entityType: "ReturnRecord",
+        entityId: body.returnRecordId,
+        newValue: body.updates,
+      });
+      return NextResponse.json({ success: true, returnRecord: updated });
+    }
+
+    // 2. Revert return status
     const { parcelId, newStatus = "Delivered" } = body;
 
     if (!parcelId) {
-      return NextResponse.json({ error: "Parcel ID is required" }, { status: 400 });
+      return NextResponse.json({ error: "Parcel ID or returnRecordId is required" }, { status: 400 });
     }
 
     const updates: any = {
@@ -395,7 +419,7 @@ export async function PUT(request: Request) {
 
     await addAuditLog({
       userId: currentUser?._id,
-      userName: currentUser?.name || "Staff",
+      userName: currentUser?.name || "Manager",
       action: "REVERT_RETURN",
       entityType: "Parcel",
       entityId: parcelId,
@@ -407,6 +431,65 @@ export async function PUT(request: Request) {
       parcel: updated,
       message: `Parcel status reverted to ${newStatus}.`,
     });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+// Delete return record - Authorized for Admin and Manager only
+export async function DELETE(request: Request) {
+  try {
+    const currentUser = await getCurrentUser();
+    const perm = checkEditOrDeletePermission(currentUser);
+    if (!perm.allowed) {
+      return NextResponse.json({ error: perm.error }, { status: perm.status });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const returnRecordId = searchParams.get("returnRecordId") || searchParams.get("id");
+    const parcelId = searchParams.get("parcelId");
+
+    if (returnRecordId) {
+      const res = await deleteReturnRecord(returnRecordId);
+      if (!res.success) {
+        return NextResponse.json({ error: res.message || "Failed to delete return record" }, { status: 400 });
+      }
+
+      await addAuditLog({
+        userId: currentUser?._id,
+        userName: currentUser?.name || "Manager",
+        action: "DELETE_RETURN_RECORD",
+        entityType: "ReturnRecord",
+        entityId: returnRecordId,
+      });
+
+      return NextResponse.json({ success: true, message: "Return record deleted" });
+    }
+
+    if (parcelId) {
+      // Revert parcel from return
+      await updateParcel(parcelId, {
+        status: "Delivered",
+        returnDate: "",
+        returnReason: "",
+        customReason: "",
+        returnedBy: "",
+        returnRecordId: "",
+        remarks: "Return cleared by Manager/Admin",
+      });
+
+      await addAuditLog({
+        userId: currentUser?._id,
+        userName: currentUser?.name || "Manager",
+        action: "CLEAR_RETURN",
+        entityType: "Parcel",
+        entityId: parcelId,
+      });
+
+      return NextResponse.json({ success: true, message: "Return cleared and parcel marked as Delivered" });
+    }
+
+    return NextResponse.json({ error: "Missing returnRecordId or parcelId" }, { status: 400 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

@@ -7,6 +7,7 @@ import {
   addAuditLog,
 } from "@/lib/store";
 import { getCurrentUser } from "@/lib/auth";
+import { checkEditOrDeletePermission } from "@/lib/permissions";
 
 export async function GET(request: Request) {
   try {
@@ -66,6 +67,11 @@ export async function GET(request: Request) {
 export async function PUT(request: Request) {
   try {
     const currentUser = await getCurrentUser();
+    const perm = checkEditOrDeletePermission(currentUser);
+    if (!perm.allowed) {
+      return NextResponse.json({ error: perm.error }, { status: perm.status });
+    }
+
     const body = await request.json();
 
     // Check if bulk update
@@ -113,6 +119,11 @@ export async function PUT(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const currentUser = await getCurrentUser();
+    const perm = checkEditOrDeletePermission(currentUser);
+    if (!perm.allowed) {
+      return NextResponse.json({ error: perm.error }, { status: perm.status });
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 

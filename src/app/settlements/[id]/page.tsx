@@ -17,10 +17,13 @@ import {
   X,
   Loader2,
   ExternalLink,
+  Trash2,
 } from "lucide-react";
 import { formatNPR, formatDate, formatDateTime } from "@/lib/utils";
+import { useUserRole } from "@/lib/useUserRole";
 
 export default function SettlementBillPage() {
+  const { user, role, isAdminOrManager, isStaff } = useUserRole();
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
@@ -61,6 +64,34 @@ export default function SettlementBillPage() {
 
   function handlePrint() {
     window.print();
+  }
+
+  async function handleDeleteSettlement() {
+    if (!isAdminOrManager) {
+      alert("Permission denied: Only Admin and Manager can delete settlements.");
+      return;
+    }
+    const s = data?.settlement;
+    if (!s) return;
+    if (
+      !confirm(
+        `Are you sure you want to cancel and delete settlement ${s.settlementNumber}?\n\nThis will safely revert all associated parcels back to Unsettled and reverse the ledger entry.`
+      )
+    ) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/settlements/${s._id}`, { method: "DELETE" });
+      if (res.ok) {
+        alert(`Settlement ${s.settlementNumber} cancelled and deleted.`);
+        router.push("/settlements");
+      } else {
+        const d = await res.json();
+        alert(d.error || "Failed to delete settlement");
+      }
+    } catch (e: any) {
+      alert(e.message || "Failed to delete settlement");
+    }
   }
 
   if (loading) {
@@ -171,6 +202,17 @@ export default function SettlementBillPage() {
             <Printer className="w-4 h-4" />
             <span>Print Bill / PDF</span>
           </button>
+
+          {isAdminOrManager && (
+            <button
+              onClick={handleDeleteSettlement}
+              className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-colors"
+              title="Cancel and delete this settlement (Admin & Manager)"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Cancel Settlement</span>
+            </button>
+          )}
         </div>
       </div>
 

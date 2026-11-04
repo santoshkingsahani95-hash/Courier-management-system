@@ -18,8 +18,10 @@ import {
   Package,
   Eye,
   Printer,
+  Trash2,
 } from "lucide-react";
 import { formatNPR, formatDate, formatDateTime } from "@/lib/utils";
+import { useUserRole } from "@/lib/useUserRole";
 
 const DEFAULT_COURIER_LIST = [
   { _id: "c-001", name: "Google Express", serviceArea: "Inside Valley", defaultDeliveryCharge: 70 },
@@ -29,6 +31,7 @@ const DEFAULT_COURIER_LIST = [
 ];
 
 export default function SettlementsPage() {
+  const { user, role, isAdminOrManager, isStaff } = useUserRole();
   const [couriers, setCouriers] = useState<any[]>(DEFAULT_COURIER_LIST);
   const [selectedCourierId, setSelectedCourierId] = useState("c-001");
   const [fromDate, setFromDate] = useState(() => {
@@ -143,8 +146,12 @@ export default function SettlementsPage() {
     }
   }
 
-  // Finalize settlement
+  // Finalize settlement - Admin & Manager only
   async function handleFinalizeSettlement() {
+    if (!isAdminOrManager) {
+      alert("Permission denied: Staff members cannot finalize settlements. Only Admin and Manager are authorized.");
+      return;
+    }
     if (!selectedCourierId) return;
     if (!confirm("Are you sure you want to finalize this settlement? A permanent snapshot and ledger record will be created.")) {
       return;
@@ -189,6 +196,34 @@ export default function SettlementsPage() {
       alert(e.message || "An error occurred");
     } finally {
       setIsFinalizing(false);
+    }
+  }
+
+  // Delete Settlement - Admin & Manager only
+  async function handleDeleteSettlement(settlementId: string, settlementNumber: string) {
+    if (!isAdminOrManager) {
+      alert("Permission denied: Only Admin and Manager can delete settlements.");
+      return;
+    }
+    if (
+      !confirm(
+        `Are you sure you want to cancel and delete settlement ${settlementNumber}?\n\nThis will safely revert all associated parcels back to Unsettled and reverse the ledger entry.`
+      )
+    ) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/settlements/${settlementId}`, { method: "DELETE" });
+      if (res.ok) {
+        alert(`Settlement ${settlementNumber} deleted and parcels restored to unsettled.`);
+        fetchPastSettlements();
+        calculateSettlementPreview();
+      } else {
+        const d = await res.json();
+        alert(d.error || "Failed to delete settlement");
+      }
+    } catch (e: any) {
+      alert(e.message || "Failed to delete settlement");
     }
   }
 
@@ -495,18 +530,24 @@ export default function SettlementsPage() {
               Recalculate
             </button>
 
-            <button
-              onClick={handleFinalizeSettlement}
-              disabled={isFinalizing || !calcPreview}
-              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-md transition-all flex items-center space-x-2"
-            >
-              {isFinalizing ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <CheckCircle2 className="w-4 h-4" />
-              )}
-              <span>Finalize & Snapshot Settlement</span>
-            </button>
+            {isAdminOrManager ? (
+              <button
+                onClick={handleFinalizeSettlement}
+                disabled={isFinalizing || !calcPreview}
+                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-md transition-all flex items-center space-x-2"
+              >
+                {isFinalizing ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="w-4 h-4" />
+                )}
+                <span>Finalize & Snapshot Settlement</span>
+              </button>
+            ) : (
+              <span className="text-[11px] bg-amber-50 text-amber-800 border border-amber-200 px-3 py-2 rounded-lg font-semibold">
+                Settlement finalization restricted to Admin & Manager
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -632,6 +673,16 @@ export default function SettlementsPage() {
                         >
                           + Pay
                         </Link>
+
+                        {isAdminOrManager && (
+                          <button
+                            onClick={() => handleDeleteSettlement(s._id, s.settlementNumber)}
+                            className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded text-[11px] transition-colors"
+                            title="Cancel / Delete Settlement (Admin & Manager)"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

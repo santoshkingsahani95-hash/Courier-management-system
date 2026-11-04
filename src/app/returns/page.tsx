@@ -18,8 +18,10 @@ import {
   Trash2,
   Calendar,
   AlertCircle,
+  Pencil,
 } from "lucide-react";
 import { formatNPR, formatDate } from "@/lib/utils";
+import { useUserRole } from "@/lib/useUserRole";
 
 const RETURN_REASONS = [
   "Customer unavailable",
@@ -47,6 +49,7 @@ interface ReturnModalRow {
 }
 
 export default function ReturnsPage() {
+  const { user, role, isAdminOrManager, isStaff } = useUserRole();
   const [couriers, setCouriers] = useState<any[]>(DEFAULT_COURIER_LIST);
   const [selectedCourierId, setSelectedCourierId] = useState<string>("c-001");
   const [loadingData, setLoadingData] = useState(true);
@@ -354,8 +357,15 @@ export default function ReturnsPage() {
     }
   }
 
-  // Revert return status back to active delivered
+  // Edit return state
+  const [editingReturn, setEditingReturn] = useState<any | null>(null);
+
+  // Revert return status back to active delivered - Admin & Manager only
   async function handleRevert(parcelId: string, customerName: string) {
+    if (!isAdminOrManager) {
+      alert("Permission denied: Staff members cannot revert returns. Only Admin and Manager are authorized.");
+      return;
+    }
     if (!confirm(`Revert return for "${customerName}"? Package will move back to Active Handover / Ready for Settlement.`)) {
       return;
     }
@@ -376,6 +386,66 @@ export default function ReturnsPage() {
       }
     } catch (e) {
       console.error(e);
+    }
+  }
+
+  // Delete return record - Admin & Manager only
+  async function handleDeleteReturn(returnRecordId: string, parcelId: string, customerName: string) {
+    if (!isAdminOrManager) {
+      alert("Permission denied: Only Admin and Manager can delete return records.");
+      return;
+    }
+    if (
+      !confirm(
+        `Are you sure you want to delete return record for "${customerName}"?\n\nThis will clear the return and restore the parcel to Delivered.`
+      )
+    ) {
+      return;
+    }
+    try {
+      let url = "/api/returns?";
+      if (returnRecordId) url += `id=${returnRecordId}&`;
+      if (parcelId) url += `parcelId=${parcelId}`;
+      const res = await fetch(url, { method: "DELETE" });
+      if (res.ok) {
+        showMessage(`✓ Deleted return record for "${customerName}".`);
+        fetchReturns();
+      } else {
+        const d = await res.json();
+        alert(d.error || "Failed to delete return record");
+      }
+    } catch (e: any) {
+      alert(e.message || "Failed to delete return record");
+    }
+  }
+
+  // Save edited return - Admin & Manager only
+  async function handleSaveEditedReturn() {
+    if (!editingReturn) return;
+    try {
+      const res = await fetch("/api/returns", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          returnRecordId: editingReturn._id,
+          parcelId: editingReturn.parcelId,
+          updates: {
+            returnReason: editingReturn.returnReason,
+            customReason: editingReturn.customReason,
+            remarks: editingReturn.remarks,
+          },
+        }),
+      });
+      if (res.ok) {
+        setEditingReturn(null);
+        showMessage("✓ Return details updated successfully.");
+        fetchReturns();
+      } else {
+        const d = await res.json();
+        alert(d.error || "Failed to update return");
+      }
+    } catch (e: any) {
+      alert(e.message || "Failed to update return");
     }
   }
 
@@ -811,14 +881,47 @@ export default function ReturnsPage() {
                       )}
                     </td>
                     <td className="py-2.5 px-4 text-center">
-                      <button
-                        onClick={() => handleRevert(p._id, p.customerName)}
-                        className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-[11px] font-semibold transition-colors inline-flex items-center space-x-1"
-                        title="Revert back to Pending"
-                      >
-                        <Undo2 className="w-3 h-3 text-slate-500" />
-                        <span>Revert</span>
-                      </button>
+                      {isAdminOrManager ? (
+                        <div className="flex items-center justify-center space-x-1.5">
+                          <button
+                            onClick={() =>
+                              setEditingReturn({
+                                _id: p.returnRecordId || p._id,
+                                parcelId: p._id,
+                                customerName: p.customerName,
+                                returnReason: p.returnReason || "Customer refused parcel",
+                                customReason: p.customReason || "",
+                                remarks: p.remarks || "",
+                              })
+                            }
+                            className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded"
+                            title="Edit Return Details (Admin & Manager)"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            onClick={() => handleRevert(p._id, p.customerName)}
+                            className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-[11px] font-semibold transition-colors inline-flex items-center space-x-1"
+                            title="Revert back to Delivered / Active Handover"
+                          >
+                            <Undo2 className="w-3 h-3 text-slate-500" />
+                            <span>Revert</span>
+                          </button>
+
+                          <button
+                            onClick={() =>
+                              handleDeleteReturn(p.returnRecordId || "", p._id, p.customerName)
+                            }
+                            className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded"
+                            title="Delete Return Record (Admin & Manager)"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-slate-400 italic">Read-only (Staff)</span>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -1196,6 +1299,86 @@ export default function ReturnsPage() {
               >
                 {isProcessing && <Loader2 className="w-4 h-4 animate-spin" />}
                 <span>Confirm Return</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT RETURN MODAL (Admin & Manager) */}
+      {editingReturn && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in zoom-in-95">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-200">
+              <h3 className="font-extrabold text-slate-900 text-sm">
+                Edit Return Details ({editingReturn.customerName})
+              </h3>
+              <button
+                onClick={() => setEditingReturn(null)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 py-4 text-xs">
+              <div>
+                <label className="block text-slate-600 font-bold mb-1">Return Reason</label>
+                <select
+                  value={editingReturn.returnReason}
+                  onChange={(e) =>
+                    setEditingReturn({ ...editingReturn, returnReason: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold"
+                >
+                  {RETURN_REASONS.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {editingReturn.returnReason === "Other" && (
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">Custom Reason</label>
+                  <input
+                    type="text"
+                    value={editingReturn.customReason || ""}
+                    onChange={(e) =>
+                      setEditingReturn({ ...editingReturn, customReason: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs"
+                    placeholder="Enter specific custom reason..."
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-slate-600 font-bold mb-1">Remarks</label>
+                <input
+                  type="text"
+                  value={editingReturn.remarks || ""}
+                  onChange={(e) =>
+                    setEditingReturn({ ...editingReturn, remarks: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100 text-xs">
+              <button
+                onClick={() => setEditingReturn(null)}
+                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEditedReturn}
+                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold"
+              >
+                Save Changes
               </button>
             </div>
           </div>

@@ -407,6 +407,68 @@ export async function saveBatch(batchData: Partial<IBatch>): Promise<IBatch> {
   return savedBatch;
 }
 
+export async function updateBatch(id: string, updates: Partial<IBatch>): Promise<IBatch | null> {
+  const batches = readJsonFile<IBatch>("batches.json", []);
+  const idx = batches.findIndex((b) => b._id === id || b.batchNumber === id);
+  if (idx === -1) return null;
+
+  batches[idx] = { ...batches[idx], ...updates, updatedAt: new Date().toISOString() };
+  writeJsonFile("batches.json", batches);
+
+  try {
+    if (await connectToDatabase()) {
+      await Batch.findByIdAndUpdate(batches[idx]._id, batches[idx]);
+    }
+  } catch (e) {}
+
+  objectCache.del(`batch:detail:${batches[idx]._id}`);
+  cacheCrawler.triggerAsyncRecrawl(["batches", "dashboard"]);
+  return batches[idx];
+}
+
+export async function deleteBatch(id: string): Promise<{ success: boolean; message?: string }> {
+  const batches = readJsonFile<IBatch>("batches.json", []);
+  const batchToDelete = batches.find((b) => b._id === id || b.batchNumber === id);
+  if (!batchToDelete) {
+    return { success: false, message: "Batch not found" };
+  }
+
+  const remainingBatches = batches.filter(
+    (b) => b._id !== batchToDelete._id && b.batchNumber !== batchToDelete.batchNumber
+  );
+  writeJsonFile("batches.json", remainingBatches);
+
+  // Also remove parcels linked to this batch
+  const parcels = readJsonFile<IParcel>("parcels.json", []);
+  const remainingParcels = parcels.filter(
+    (p) => p.batchId !== batchToDelete._id && p.batchNumber !== batchToDelete.batchNumber
+  );
+  writeJsonFile("parcels.json", remainingParcels);
+
+  // Also remove return records linked to this batch
+  const returns = readJsonFile<IReturnRecord>("return_records.json", []);
+  const remainingReturns = returns.filter(
+    (r) => r.batchId !== batchToDelete._id && r.batchNumber !== batchToDelete.batchNumber
+  );
+  writeJsonFile("return_records.json", remainingReturns);
+
+  try {
+    if (await connectToDatabase()) {
+      await Batch.findByIdAndDelete(batchToDelete._id);
+      await Parcel.deleteMany({
+        $or: [{ batchId: batchToDelete._id }, { batchNumber: batchToDelete.batchNumber }],
+      });
+      await ReturnRecord.deleteMany({
+        $or: [{ batchId: batchToDelete._id }, { batchNumber: batchToDelete.batchNumber }],
+      });
+    }
+  } catch (e) {}
+
+  objectCache.del(`batch:detail:${batchToDelete._id}`);
+  cacheCrawler.triggerAsyncRecrawl(["batches", "parcels", "returns", "dashboard"]);
+  return { success: true };
+}
+
 /* ==================== PARCELS ==================== */
 export async function getParcels(): Promise<IParcel[]> {
   const cached = objectCache.getParcels();
@@ -660,6 +722,71 @@ export async function saveReturnRecord(record: Partial<IReturnRecord>): Promise<
   return newRecord;
 }
 
+export async function deleteReturnRecord(id: string): Promise<{ success: boolean; message?: string }> {
+  const records = readJsonFile<IReturnRecord>("return_records.json", []);
+  const target = records.find((r) => r._id === id);
+  if (!target) {
+    return { success: false, message: "Return record not found" };
+  }
+
+  const remaining = records.filter((r) => r._id !== id);
+  writeJsonFile("return_records.json", remaining);
+
+  try {
+    if (await connectToDatabase()) {
+      await ReturnRecord.findByIdAndDelete(id);
+    }
+  } catch (e) {}
+
+  // If parcel is linked, revert the parcel status back to Delivered
+  if (target.parcelId) {
+    await updateParcel(target.parcelId, {
+      status: "Delivered",
+      returnDate: "",
+      returnReason: "",
+      customReason: "",
+      returnedBy: "",
+      returnRecordId: "",
+      remarks: "Return removed by authorized staff/admin",
+    });
+  }
+
+  cacheCrawler.triggerAsyncRecrawl(["returns", "parcels", "batches", "settlements", "dashboard"]);
+  return { success: true };
+}
+
+export async function updateReturnRecord(
+  id: string,
+  updates: Partial<IReturnRecord>
+): Promise<IReturnRecord | null> {
+  const records = readJsonFile<IReturnRecord>("return_records.json", []);
+  const idx = records.findIndex((r) => r._id === id);
+  if (idx === -1) return null;
+
+  const updatedRecord = { ...records[idx], ...updates, updatedAt: new Date().toISOString() };
+  records[idx] = updatedRecord;
+  writeJsonFile("return_records.json", records);
+
+  try {
+    if (await connectToDatabase()) {
+      await ReturnRecord.findByIdAndUpdate(id, updatedRecord);
+    }
+  } catch (e) {}
+
+  // Sync to linked parcel if returnReason changed
+  if (updatedRecord.parcelId && (updates.returnReason || updates.customReason)) {
+    const finalReason = updates.returnReason === "Other" && updates.customReason ? updates.customReason : updates.returnReason;
+    await updateParcel(updatedRecord.parcelId, {
+      returnReason: finalReason || updatedRecord.returnReason,
+      customReason: updates.customReason ?? updatedRecord.customReason,
+      remarks: finalReason || updatedRecord.returnReason,
+    });
+  }
+
+  cacheCrawler.triggerAsyncRecrawl(["returns", "parcels", "batches", "settlements", "dashboard"]);
+  return updatedRecord;
+}
+
 /* ==================== SETTLEMENTS ==================== */
 export async function getSettlements(): Promise<ISettlement[]> {
   const cached = objectCache.getSettlements();
@@ -840,6 +967,68 @@ export async function createSettlement(data: {
 
   cacheCrawler.triggerAsyncRecrawl(["settlements", "parcels", "ledger", "dashboard"]);
   return newSettlement;
+}
+
+export async function deleteSettlement(id: string): Promise<{ success: boolean; message?: string }> {
+  const settlements = readJsonFile<ISettlement>("settlements.json", []);
+  const target = settlements.find((s) => s._id === id || s.settlementNumber === id);
+  if (!target) {
+    return { success: false, message: "Settlement not found" };
+  }
+
+  // 1. Revert parcels associated with this settlement
+  const parcels = readJsonFile<IParcel>("parcels.json", []);
+  const parcelIdsSet = new Set(target.parcelIds || []);
+  let modifiedParcels = false;
+  for (const p of parcels) {
+    if (p.settlementId === target._id || parcelIdsSet.has(p._id)) {
+      p.settlementId = "";
+      p.settlementStatus = "Unsettled";
+      p.updatedAt = new Date().toISOString();
+      modifiedParcels = true;
+    }
+  }
+  if (modifiedParcels) {
+    writeJsonFile("parcels.json", parcels);
+    try {
+      if (await connectToDatabase()) {
+        await Parcel.updateMany(
+          { $or: [{ settlementId: target._id }, { _id: { $in: Array.from(parcelIdsSet) } }] },
+          { $set: { settlementId: "", settlementStatus: "Unsettled" } }
+        );
+      }
+    } catch (e) {}
+  }
+
+  // 2. Remove associated ledger entry if any
+  const ledger = readJsonFile<ILedgerEntry>("ledger.json", []);
+  const remainingLedger = ledger.filter(
+    (l) => l.referenceId !== target.settlementNumber && l.referenceId !== target._id
+  );
+  writeJsonFile("ledger.json", remainingLedger);
+  try {
+    if (await connectToDatabase()) {
+      await LedgerEntry.deleteMany({
+        $or: [{ referenceId: target.settlementNumber }, { referenceId: target._id }],
+      });
+    }
+  } catch (e) {}
+
+  // 3. Remove settlement from settlements.json & db
+  const remainingSettlements = settlements.filter(
+    (s) => s._id !== target._id && s.settlementNumber !== target.settlementNumber
+  );
+  writeJsonFile("settlements.json", remainingSettlements);
+  try {
+    if (await connectToDatabase()) {
+      await Settlement.deleteOne({
+        $or: [{ _id: target._id }, { settlementNumber: target.settlementNumber }],
+      });
+    }
+  } catch (e) {}
+
+  cacheCrawler.triggerAsyncRecrawl(["settlements", "parcels", "ledger", "dashboard", "couriers"]);
+  return { success: true };
 }
 
 /* ==================== PAYMENTS ==================== */
@@ -1140,6 +1329,47 @@ export async function addLedgerEntry(entry: {
   objectCache.setCourierBalance(entry.courierId, newBalance);
   cacheCrawler.triggerAsyncRecrawl(["ledger", `ledger:${entry.courierId}`, "dashboard", "couriers"]);
   return newEntry;
+}
+
+export async function deleteLedgerEntry(id: string): Promise<{ success: boolean; message?: string }> {
+  const ledger = readJsonFile<ILedgerEntry>("ledger.json", []);
+  const entryToDelete = ledger.find((e) => e._id === id);
+  if (!entryToDelete) {
+    return { success: false, message: "Ledger entry not found" };
+  }
+
+  const remaining = ledger.filter((e) => e._id !== id);
+  writeJsonFile("ledger.json", remaining);
+
+  try {
+    if (await connectToDatabase()) {
+      await LedgerEntry.findByIdAndDelete(id);
+    }
+  } catch (e) {}
+
+  cacheCrawler.triggerAsyncRecrawl(["ledger", `ledger:${entryToDelete.courierId}`, "dashboard", "couriers"]);
+  return { success: true };
+}
+
+export async function updateLedgerEntry(
+  id: string,
+  updates: Partial<ILedgerEntry>
+): Promise<ILedgerEntry | null> {
+  const ledger = readJsonFile<ILedgerEntry>("ledger.json", []);
+  const idx = ledger.findIndex((e) => e._id === id);
+  if (idx === -1) return null;
+
+  ledger[idx] = { ...ledger[idx], ...updates };
+  writeJsonFile("ledger.json", ledger);
+
+  try {
+    if (await connectToDatabase()) {
+      await LedgerEntry.findByIdAndUpdate(id, ledger[idx]);
+    }
+  } catch (e) {}
+
+  cacheCrawler.triggerAsyncRecrawl(["ledger", `ledger:${ledger[idx].courierId}`, "dashboard", "couriers"]);
+  return ledger[idx];
 }
 
 /* ==================== SETTINGS ==================== */

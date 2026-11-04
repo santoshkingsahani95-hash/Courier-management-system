@@ -19,8 +19,11 @@ import {
   AlertCircle,
   ArrowRight,
   ChevronDown,
+  Trash2,
+  Pencil,
 } from "lucide-react";
 import { formatNPR, formatDate, formatDateTime } from "@/lib/utils";
+import { useUserRole } from "@/lib/useUserRole";
 
 interface BatchItem {
   _id: string;
@@ -64,6 +67,7 @@ interface ParcelDetail {
 }
 
 export default function HistoryPage() {
+  const { user, role, isAdminOrManager, isStaff } = useUserRole();
   const [batches, setBatches] = useState<BatchItem[]>([]);
   const [couriers, setCouriers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,6 +86,83 @@ export default function HistoryPage() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [detailParcelFilter, setDetailParcelFilter] = useState<"all" | "Returned" | "Delivered" | "Pending">("all");
   const [detailSearch, setDetailSearch] = useState("");
+
+  // Edit / Delete states for Admin & Manager
+  const [editingParcel, setEditingParcel] = useState<ParcelDetail | null>(null);
+
+  async function handleDeleteBatch(batchId: string, batchNumber: string) {
+    if (!isAdminOrManager) {
+      alert("Permission denied: Only Admin and Manager can delete batches.");
+      return;
+    }
+    if (
+      !confirm(
+        `Are you sure you want to delete Batch ${batchNumber}?\n\nThis will permanently delete the batch and all its parcel records.`
+      )
+    ) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/batches/${batchId}`, { method: "DELETE" });
+      if (res.ok) {
+        setBatches((prev) => prev.filter((b) => b._id !== batchId));
+        if (selectedBatch?._id === batchId) {
+          setSelectedBatch(null);
+        }
+        alert(`Batch ${batchNumber} deleted successfully.`);
+      } else {
+        const d = await res.json();
+        alert(d.error || "Failed to delete batch");
+      }
+    } catch (e: any) {
+      alert(e.message || "Failed to delete batch");
+    }
+  }
+
+  async function handleDeleteParcel(parcelId: string, customerName: string) {
+    if (!isAdminOrManager) {
+      alert("Permission denied: Only Admin and Manager can delete parcels.");
+      return;
+    }
+    if (!confirm(`Are you sure you want to delete parcel entry for "${customerName}"?`)) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/parcels?id=${parcelId}`, { method: "DELETE" });
+      if (res.ok) {
+        setBatchParcels((prev) => prev.filter((p) => p._id !== parcelId));
+        fetchData();
+      } else {
+        const d = await res.json();
+        alert(d.error || "Failed to delete parcel");
+      }
+    } catch (e: any) {
+      alert(e.message || "Failed to delete parcel");
+    }
+  }
+
+  async function handleSaveEditedParcel() {
+    if (!editingParcel) return;
+    try {
+      const res = await fetch("/api/parcels", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editingParcel),
+      });
+      if (res.ok) {
+        setBatchParcels((prev) =>
+          prev.map((p) => (p._id === editingParcel._id ? { ...p, ...editingParcel } : p))
+        );
+        setEditingParcel(null);
+        fetchData();
+      } else {
+        const d = await res.json();
+        alert(d.error || "Failed to update parcel");
+      }
+    } catch (e: any) {
+      alert(e.message || "Failed to update parcel");
+    }
+  }
 
   useEffect(() => {
     fetchData();
@@ -489,13 +570,25 @@ export default function HistoryPage() {
                         </span>
                       </td>
                       <td className="py-3 px-4 text-center whitespace-nowrap">
-                        <button
-                          onClick={() => openBatchDetail(b._id)}
-                          className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-bold transition-colors"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>View Details</span>
-                        </button>
+                        <div className="flex items-center justify-center space-x-1.5">
+                          <button
+                            onClick={() => openBatchDetail(b._id)}
+                            className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-bold transition-colors"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>View Details</span>
+                          </button>
+
+                          {isAdminOrManager && (
+                            <button
+                              onClick={() => handleDeleteBatch(b._id, b.batchNumber)}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                              title="Delete Batch (Admin & Manager)"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -582,6 +675,18 @@ export default function HistoryPage() {
                   <Printer className="w-3.5 h-3.5" />
                   <span>Print Batch</span>
                 </button>
+
+                {isAdminOrManager && (
+                  <button
+                    onClick={() => handleDeleteBatch(selectedBatch._id, selectedBatch.batchNumber)}
+                    className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-semibold flex items-center space-x-1"
+                    title="Delete this batch (Admin/Manager)"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Batch</span>
+                  </button>
+                )}
+
                 <button
                   onClick={() => setSelectedBatch(null)}
                   className="w-8 h-8 rounded-xl hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors"
@@ -687,6 +792,7 @@ export default function HistoryPage() {
                       <th className="py-2.5 px-3 text-right">COD (Rs.)</th>
                       <th className="py-2.5 px-3 text-center">Status</th>
                       <th className="py-2.5 px-4">Return Reason / Lifecycle</th>
+                      {isAdminOrManager && <th className="py-2.5 px-3 text-center">Action</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -773,6 +879,27 @@ export default function HistoryPage() {
                               <span className="text-slate-400 text-[11px]">{p.remarks || "-"}</span>
                             )}
                           </td>
+
+                          {isAdminOrManager && (
+                            <td className="py-2 px-3 text-center">
+                              <div className="flex items-center justify-center space-x-1">
+                                <button
+                                  onClick={() => setEditingParcel({ ...p })}
+                                  className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded"
+                                  title="Edit Parcel Entry"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteParcel(p._id, p.customerName)}
+                                  className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded"
+                                  title="Delete Parcel Entry"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          )}
                         </tr>
                       );
                     })}
@@ -785,12 +912,143 @@ export default function HistoryPage() {
             <div className="p-3.5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-2">
               <div>
                 Showing {filteredDetailParcels.length} of {batchParcels.length} parcels in batch
+                {!isAdminOrManager && (
+                  <span className="ml-2 text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded text-[10px] font-semibold">
+                    Staff View: Edit/Delete disabled
+                  </span>
+                )}
               </div>
               <button
                 onClick={() => setSelectedBatch(null)}
                 className="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl font-bold transition-colors"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT PARCEL MODAL (Admin & Manager) */}
+      {editingParcel && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 animate-in zoom-in-95">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-200">
+              <h3 className="font-extrabold text-slate-900 text-sm">
+                Edit Parcel Entry ({editingParcel.customerName})
+              </h3>
+              <button
+                onClick={() => setEditingParcel(null)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 py-4 text-xs">
+              <div>
+                <label className="block text-slate-600 font-bold mb-1">Customer Name</label>
+                <input
+                  type="text"
+                  value={editingParcel.customerName}
+                  onChange={(e) =>
+                    setEditingParcel({ ...editingParcel, customerName: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-bold mb-1">Mobile Number</label>
+                <input
+                  type="text"
+                  value={editingParcel.mobile}
+                  onChange={(e) =>
+                    setEditingParcel({ ...editingParcel, mobile: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-bold mb-1">COD Amount (Rs.)</label>
+                <input
+                  type="number"
+                  value={editingParcel.codAmount}
+                  onChange={(e) =>
+                    setEditingParcel({
+                      ...editingParcel,
+                      codAmount: Number(e.target.value) || 0,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-bold mb-1">Delivery Charge</label>
+                <input
+                  type="number"
+                  value={editingParcel.deliveryCharge ?? 0}
+                  onChange={(e) =>
+                    setEditingParcel({
+                      ...editingParcel,
+                      deliveryCharge: Number(e.target.value) || 0,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-bold mb-1">Tracking ID</label>
+                <input
+                  type="text"
+                  value={editingParcel.trackingId || ""}
+                  onChange={(e) =>
+                    setEditingParcel({ ...editingParcel, trackingId: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-bold mb-1">SKU / Item</label>
+                <input
+                  type="text"
+                  value={editingParcel.sku || ""}
+                  onChange={(e) =>
+                    setEditingParcel({ ...editingParcel, sku: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs"
+                />
+              </div>
+
+              <div className="col-span-2">
+                <label className="block text-slate-600 font-bold mb-1">Remarks</label>
+                <input
+                  type="text"
+                  value={editingParcel.remarks || ""}
+                  onChange={(e) =>
+                    setEditingParcel({ ...editingParcel, remarks: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+              <button
+                onClick={() => setEditingParcel(null)}
+                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEditedParcel}
+                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold"
+              >
+                Save Changes
               </button>
             </div>
           </div>

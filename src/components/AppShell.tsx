@@ -18,12 +18,7 @@ export default function AppShell({ children }: AppShellProps) {
     name: string;
     email: string;
     role: string;
-  } | null>({
-    _id: "u-001",
-    name: "Santosh Mukhiya (Admin)",
-    email: "admin@courier.com",
-    role: "admin",
-  });
+  } | null>(null);
   const [loading, setLoading] = useState(false);
 
   const isLoginPage = pathname === "/login";
@@ -44,7 +39,7 @@ export default function AppShell({ children }: AppShellProps) {
           const loginRes = await fetch("/api/auth/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: "admin@courier.com", password: "admin123" }),
+            body: JSON.stringify({ email: "santoshkingsahani95@gmail.com", password: "Santosh@143" }),
           });
           if (loginRes.ok) {
             const loginData = await loginRes.json();

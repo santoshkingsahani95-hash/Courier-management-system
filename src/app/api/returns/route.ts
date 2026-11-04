@@ -11,6 +11,7 @@ import {
   getReturnRecords,
   deleteReturnRecord,
   updateReturnRecord,
+  redeliverParcel,
 } from "@/lib/store";
 import { getCurrentUser } from "@/lib/auth";
 import { checkEditOrDeletePermission } from "@/lib/permissions";
@@ -384,6 +385,54 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
+
+    // 0. Re-assign & Re-deliver returned parcel (Customer contacted again)
+    if (body.action === "redeliver" && body.parcelId) {
+      if (!body.courierId) {
+        return NextResponse.json({ error: "Courier selection is required for re-delivery" }, { status: 400 });
+      }
+
+      const updated = await redeliverParcel({
+        parcelId: body.parcelId,
+        courierId: body.courierId,
+        courierName: body.courierName,
+        customerName: body.customerName,
+        mobile: body.mobile,
+        serviceArea: body.serviceArea,
+        codAmount: body.codAmount !== undefined ? Number(body.codAmount) : undefined,
+        deliveryCharge: body.deliveryCharge !== undefined ? Number(body.deliveryCharge) : undefined,
+        dispatchDate: body.dispatchDate,
+        notes: body.notes,
+        userName: currentUser?.name || "Admin",
+      });
+
+      if (!updated) {
+        return NextResponse.json({ error: "Parcel not found" }, { status: 404 });
+      }
+
+      await addAuditLog({
+        userId: currentUser?._id,
+        userName: currentUser?.name || "Manager",
+        action: "REDELIVER_PARCEL",
+        entityType: "Parcel",
+        entityId: body.parcelId,
+        newValue: {
+          courierId: body.courierId,
+          courierName: updated.courierName,
+          customerName: updated.customerName,
+          mobile: updated.mobile,
+          dispatchDate: updated.deliveryDate,
+          codAmount: updated.codAmount,
+          notes: body.notes,
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        parcel: updated,
+        message: `Package successfully re-assigned & re-dispatched to ${updated.courierName} for delivery.`,
+      });
+    }
 
     // 1. Edit return reason / details
     if (body.returnRecordId && body.updates) {

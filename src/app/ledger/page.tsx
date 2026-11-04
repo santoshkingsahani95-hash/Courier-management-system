@@ -269,13 +269,12 @@ export default function LedgerPage() {
 
         {/* Closing Balance Card with Courier Owes Us / We Owe Courier */}
         <div
-          className={`p-4 rounded-xl border shadow-xs flex items-center justify-between ${
-            (summary?.closingBalance || 0) > 0
+          className={`p-4 rounded-xl border shadow-xs flex items-center justify-between ${(summary?.closingBalance || 0) > 0
               ? "bg-amber-50/70 border-amber-300 text-amber-900"
               : (summary?.closingBalance || 0) < 0
-              ? "bg-purple-50/70 border-purple-300 text-purple-900"
-              : "bg-slate-50 border-slate-200 text-slate-800"
-          }`}
+                ? "bg-purple-50/70 border-purple-300 text-purple-900"
+                : "bg-slate-50 border-slate-200 text-slate-800"
+            }`}
         >
           <div>
             <span className="text-[10px] uppercase font-bold tracking-wider">
@@ -335,13 +334,12 @@ export default function LedgerPage() {
 
                     <td className="py-3.5 px-4">
                       <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          e.transactionType === "Payment Received"
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold ${e.transactionType === "Payment Received"
                             ? "bg-emerald-100 text-emerald-800"
                             : e.transactionType === "Settlement Finalized"
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-slate-100 text-slate-700"
-                        }`}
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-slate-100 text-slate-700"
+                          }`}
                       >
                         {e.transactionType}
                       </span>

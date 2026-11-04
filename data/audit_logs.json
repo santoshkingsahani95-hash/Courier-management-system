@@ -1,5 +1,59 @@
 [
   {
+    "_id": "aud-1793789886257-7fb1",
+    "userId": "u-001",
+    "userName": "Santosh Sahani (Admin)",
+    "action": "DELETE_BATCH",
+    "entityType": "Batch",
+    "entityId": "bat-test-002",
+    "timestamp": "2026-11-04T10:58:06.256Z"
+  },
+  {
+    "_id": "aud-1793789881378-x1z8",
+    "userId": "u-001",
+    "userName": "Santosh Sahani (Admin)",
+    "action": "DELETE_BATCH",
+    "entityType": "Batch",
+    "entityId": "bat-test-003",
+    "timestamp": "2026-11-04T10:58:01.378Z"
+  },
+  {
+    "_id": "aud-1793789876815-rf0x",
+    "userId": "u-001",
+    "userName": "Santosh Sahani (Admin)",
+    "action": "DELETE_BATCH",
+    "entityType": "Batch",
+    "entityId": "bat-test-001",
+    "timestamp": "2026-11-04T10:57:56.814Z"
+  },
+  {
+    "_id": "aud-1793789822074-3i0v",
+    "userId": "u-001",
+    "userName": "Santosh Sahani (Admin)",
+    "action": "CLEAR_RETURN",
+    "entityType": "Parcel",
+    "entityId": "pcl-test-002",
+    "timestamp": "2026-11-04T10:57:02.074Z"
+  },
+  {
+    "_id": "aud-1793789818062-hsda",
+    "userId": "u-001",
+    "userName": "Santosh Sahani (Admin)",
+    "action": "CLEAR_RETURN",
+    "entityType": "Parcel",
+    "entityId": "pcl-test-002",
+    "timestamp": "2026-11-04T10:56:58.062Z"
+  },
+  {
+    "_id": "aud-1793789814437-fp2w",
+    "userId": "u-001",
+    "userName": "Santosh Sahani (Admin)",
+    "action": "CLEAR_RETURN",
+    "entityType": "Parcel",
+    "entityId": "pcl-test-001",
+    "timestamp": "2026-11-04T10:56:54.437Z"
+  },
+  {
     "_id": "aud-1793788651464-tj9r",
     "userId": "u-001",
     "userName": "Santosh Sahani (Admin)",

@@ -36,3 +36,4 @@ export function checkEditOrDeletePermission(user: IUser | null | undefined): {
 
   return { allowed: true, status: 200 };
 }
+

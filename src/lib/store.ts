@@ -669,6 +669,128 @@ export async function deleteParcel(id: string): Promise<boolean> {
   return true;
 }
 
+/**
+ * Re-deliver & Re-assign a Returned Parcel when customer contacts again.
+ * Safely clears return deductions, assigns to selected courier, applies delivery charge,
+ * records audit notes, and makes it active for delivery & settlement.
+ */
+export async function redeliverParcel(data: {
+  parcelId: string;
+  courierId: string;
+  courierName?: string;
+  customerName?: string;
+  mobile?: string;
+  serviceArea?: string;
+  codAmount?: number;
+  deliveryCharge?: number;
+  dispatchDate?: string;
+  notes?: string;
+  userName?: string;
+  batchId?: string;
+  batchNumber?: string;
+}): Promise<IParcel | null> {
+  const parcels = readJsonFile<IParcel>("parcels.json", []);
+  const p = parcels.find((item) => item._id === data.parcelId);
+  if (!p) return null;
+
+  const todayStr = new Date().toISOString().split("T")[0];
+  const dispatchDate = data.dispatchDate || todayStr;
+
+  // Resolve courier details
+  const courier = await getCourierById(data.courierId);
+  const courierName = data.courierName || courier?.name || p.courierName;
+  const deliveryCharge =
+    data.deliveryCharge !== undefined && !isNaN(Number(data.deliveryCharge))
+      ? Number(data.deliveryCharge)
+      : courier?.defaultDeliveryCharge ?? p.deliveryCharge ?? 0;
+
+  // If previous return record existed, remove it so return count is cleared
+  if (p.returnRecordId) {
+    await deleteReturnRecord(p.returnRecordId);
+  }
+
+  // Construct updated remarks
+  const prevRemarks = p.remarks ? `${p.remarks} | ` : "";
+  const redeliverNote = `Re-dispatched to ${courierName} on ${dispatchDate}${data.notes ? ` (${data.notes})` : ""}`;
+  const newRemarks = `${prevRemarks}[${redeliverNote}]`;
+
+  // Determine batch: if courier changed, or if batchId provided
+  let targetBatchId = data.batchId || p.batchId;
+  let targetBatchNumber = data.batchNumber || p.batchNumber;
+
+  if (data.courierId !== p.courierId && !data.batchId) {
+    // Look for an existing batch for this courier on dispatchDate
+    const batches = await getBatches();
+    const existingBatch = batches.find(
+      (b) =>
+        b.courierId === data.courierId &&
+        b.batchDate === dispatchDate &&
+        b.settlementStatus !== "Settled"
+    );
+    if (existingBatch) {
+      targetBatchId = existingBatch._id;
+      targetBatchNumber = existingBatch.batchNumber;
+    } else {
+      // Create a new batch for this courier dispatch
+      const newBatch = await saveBatch({
+        courierId: data.courierId,
+        courierName,
+        batchDate: dispatchDate,
+        totalPackages: 1,
+        totalCOD: data.codAmount ?? p.codAmount,
+        notes: `Re-dispatch batch for customer re-deliveries`,
+        createdBy: data.userName || "Admin",
+      });
+      targetBatchId = newBatch._id;
+      targetBatchNumber = newBatch.batchNumber;
+    }
+  }
+
+  const resolvedArea: "Inside Valley" | "Outside Valley" =
+    data.serviceArea === "Outside Valley" || courier?.serviceArea === "Outside Valley"
+      ? "Outside Valley"
+      : "Inside Valley";
+
+  const updates: Partial<IParcel> = {
+    courierId: data.courierId,
+    courierName,
+    customerName: data.customerName?.trim() || p.customerName,
+    mobile: data.mobile?.trim() || p.mobile,
+    serviceArea: resolvedArea,
+    codAmount: data.codAmount !== undefined ? Number(data.codAmount) : p.codAmount,
+    deliveryCharge,
+    actualDeliveryCharge: deliveryCharge,
+    actualReturnCharge: 0,
+    status: "Delivered",
+    deliveryDate: dispatchDate,
+    returnDate: "",
+    returnReason: "",
+    customReason: "",
+    returnedBy: "",
+    returnRecordId: "",
+    settlementStatus: "Unsettled",
+    settlementId: "",
+    batchId: targetBatchId,
+    batchNumber: targetBatchNumber,
+    remarks: newRemarks,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const updatedParcel = await updateParcel(p._id, updates);
+
+  cacheCrawler.triggerAsyncRecrawl([
+    "parcels",
+    "returns",
+    "batches",
+    "settlements",
+    "ledger",
+    "dashboard",
+    "couriers",
+  ]);
+
+  return updatedParcel;
+}
+
 /* ==================== RETURN RECORDS ==================== */
 export async function getReturnRecords(): Promise<IReturnRecord[]> {
   try {

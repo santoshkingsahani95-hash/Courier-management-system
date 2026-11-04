@@ -449,6 +449,96 @@ export default function ReturnsPage() {
     }
   }
 
+  // Re-deliver & Re-assign Modal state (Customer contacted again)
+  const [showRedeliverModal, setShowRedeliverModal] = useState(false);
+  const [redeliverForm, setRedeliverForm] = useState<{
+    parcelId: string;
+    customerName: string;
+    mobile: string;
+    courierId: string;
+    courierName: string;
+    serviceArea: string;
+    codAmount: number | "";
+    deliveryCharge: number | "";
+    dispatchDate: string;
+    notes: string;
+  } | null>(null);
+  const [isSubmittingRedeliver, setIsSubmittingRedeliver] = useState(false);
+
+  function openRedeliverModal(parcel: any) {
+    const courier = couriers.find((c) => c._id === parcel.courierId) || couriers[0];
+    setRedeliverForm({
+      parcelId: parcel._id,
+      customerName: parcel.customerName || "",
+      mobile: parcel.mobile || "",
+      courierId: courier?._id || parcel.courierId,
+      courierName: courier?.name || parcel.courierName,
+      serviceArea: parcel.serviceArea || courier?.serviceArea || "Inside Valley",
+      codAmount: parcel.codAmount ?? 0,
+      deliveryCharge:
+        parcel.actualDeliveryCharge ?? parcel.deliveryCharge ?? courier?.defaultDeliveryCharge ?? 100,
+      dispatchDate: new Date().toISOString().split("T")[0],
+      notes: "",
+    });
+    setShowRedeliverModal(true);
+  }
+
+  function handleRedeliverCourierChange(newCourierId: string) {
+    if (!redeliverForm) return;
+    const courier = couriers.find((c) => c._id === newCourierId);
+    setRedeliverForm({
+      ...redeliverForm,
+      courierId: newCourierId,
+      courierName: courier?.name || "Courier",
+      serviceArea: courier?.serviceArea || redeliverForm.serviceArea,
+      deliveryCharge: courier?.defaultDeliveryCharge ?? redeliverForm.deliveryCharge,
+    });
+  }
+
+  async function handleSubmitRedeliver(e: React.FormEvent) {
+    e.preventDefault();
+    if (!redeliverForm) return;
+    if (!isAdminOrManager) {
+      alert("Permission denied: Only Admin and Manager can re-deliver and re-assign parcels.");
+      return;
+    }
+
+    setIsSubmittingRedeliver(true);
+    try {
+      const res = await fetch("/api/returns", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "redeliver",
+          parcelId: redeliverForm.parcelId,
+          courierId: redeliverForm.courierId,
+          courierName: redeliverForm.courierName,
+          customerName: redeliverForm.customerName.trim(),
+          mobile: redeliverForm.mobile.trim(),
+          serviceArea: redeliverForm.serviceArea,
+          codAmount: Number(redeliverForm.codAmount) || 0,
+          deliveryCharge: Number(redeliverForm.deliveryCharge) || 0,
+          dispatchDate: redeliverForm.dispatchDate,
+          notes: redeliverForm.notes.trim(),
+        }),
+      });
+
+      const d = await res.json();
+      if (res.ok) {
+        showMessage(`✓ Re-assigned and re-dispatched to ${redeliverForm.courierName} for delivery!`);
+        setShowRedeliverModal(false);
+        setRedeliverForm(null);
+        fetchReturns();
+      } else {
+        alert(d.error || "Failed to re-deliver parcel");
+      }
+    } catch (err: any) {
+      alert(err.message || "Failed to re-deliver parcel");
+    } finally {
+      setIsSubmittingRedeliver(false);
+    }
+  }
+
   // Filter pending parcels
   const filteredPending = useMemo(() => {
     if (!pendingSearch.trim()) return pendingParcels;
@@ -883,6 +973,15 @@ export default function ReturnsPage() {
                     <td className="py-2.5 px-4 text-center">
                       {isAdminOrManager ? (
                         <div className="flex items-center justify-center space-x-1.5">
+                          <button
+                            onClick={() => openRedeliverModal(p)}
+                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-[11px] font-bold flex items-center space-x-1 shadow-xs transition-colors"
+                            title="Customer Contacted Again: Re-assign & Re-deliver to Courier"
+                          >
+                            <Truck className="w-3.5 h-3.5" />
+                            <span>Re-deliver</span>
+                          </button>
+
                           <button
                             onClick={() =>
                               setEditingReturn({
@@ -1365,6 +1464,24 @@ export default function ReturnsPage() {
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs"
                 />
               </div>
+
+              {/* Shortcut to Re-deliver if customer contacted again */}
+              <div className="pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const p =
+                      returnsList.find((item) => item._id === editingReturn.parcelId) ||
+                      editingReturn;
+                    setEditingReturn(null);
+                    openRedeliverModal(p);
+                  }}
+                  className="w-full py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg text-xs font-bold flex items-center justify-center space-x-1.5 transition-colors"
+                >
+                  <Truck className="w-4 h-4 text-emerald-600" />
+                  <span>Customer Contacted Again? Re-deliver to Courier</span>
+                </button>
+              </div>
             </div>
 
             <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100 text-xs">
@@ -1381,6 +1498,196 @@ export default function ReturnsPage() {
                 Save Changes
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* RE-ASSIGN & RE-DELIVER MODAL (When Customer Contacts Again) */}
+      {showRedeliverModal && redeliverForm && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 animate-in zoom-in-95">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-200">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700">
+                  <Truck className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-900 text-sm">
+                    Re-assign & Re-deliver to Courier
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Customer contacted again: update details & hand over for delivery
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowRedeliverModal(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitRedeliver} className="space-y-3 py-4 text-xs">
+              {/* Courier Selection */}
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">
+                  Assign Delivery Courier Partner <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={redeliverForm.courierId}
+                  onChange={(e) => handleRedeliverCourierChange(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  required
+                >
+                  {couriers.map((c) => (
+                    <option key={c._id} value={c._id}>
+                      {c.name} ({c.serviceArea || "Standard"} — Rs. {c.defaultDeliveryCharge ?? 100})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Customer Contact Info (Editable if new number or address) */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">Customer Name</label>
+                  <input
+                    type="text"
+                    value={redeliverForm.customerName}
+                    onChange={(e) =>
+                      setRedeliverForm({ ...redeliverForm, customerName: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">Mobile Number</label>
+                  <input
+                    type="text"
+                    value={redeliverForm.mobile}
+                    onChange={(e) =>
+                      setRedeliverForm({ ...redeliverForm, mobile: e.target.value })
+                    }
+                    placeholder="e.g. 98XXXXXXXX"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-mono font-bold"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Area & Re-dispatch Date */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">Coverage Area</label>
+                  <select
+                    value={redeliverForm.serviceArea}
+                    onChange={(e) =>
+                      setRedeliverForm({ ...redeliverForm, serviceArea: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-medium"
+                  >
+                    <option value="Inside Valley">Inside Valley</option>
+                    <option value="Outside Valley">Outside Valley</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">Re-dispatch Date</label>
+                  <input
+                    type="date"
+                    value={redeliverForm.dispatchDate}
+                    onChange={(e) =>
+                      setRedeliverForm({ ...redeliverForm, dispatchDate: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-medium"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* COD Amount & Delivery Charge */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">COD Amount (Rs.)</label>
+                  <input
+                    type="number"
+                    value={redeliverForm.codAmount}
+                    onChange={(e) =>
+                      setRedeliverForm({
+                        ...redeliverForm,
+                        codAmount: e.target.value === "" ? "" : Number(e.target.value),
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-mono font-bold text-blue-700"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">Courier Delivery Fee (Rs.)</label>
+                  <input
+                    type="number"
+                    value={redeliverForm.deliveryCharge}
+                    onChange={(e) =>
+                      setRedeliverForm({
+                        ...redeliverForm,
+                        deliveryCharge: e.target.value === "" ? "" : Number(e.target.value),
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-mono font-medium text-slate-700"
+                  />
+                </div>
+              </div>
+
+              {/* Notes / Special Customer Request */}
+              <div>
+                <label className="block text-slate-600 font-bold mb-1">
+                  Customer Re-contact Notes & Instructions
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. Customer called again; deliver tomorrow after 2 PM at new office address..."
+                  value={redeliverForm.notes}
+                  onChange={(e) =>
+                    setRedeliverForm({ ...redeliverForm, notes: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs"
+                />
+              </div>
+
+              <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl text-emerald-900 text-[11px] leading-relaxed">
+                <strong>Re-delivery Effect:</strong> Package status will move from{" "}
+                <span className="text-red-700 font-bold">Returned</span> to{" "}
+                <span className="text-emerald-700 font-bold">Active Handover</span>. Previous return
+                deduction will be cancelled, and the parcel will enter the settlement statement for{" "}
+                <strong>{redeliverForm.courierName}</strong>.
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowRedeliverModal(false)}
+                  className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingRedeliver}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg font-bold shadow-xs flex items-center space-x-1.5 transition-colors"
+                >
+                  {isSubmittingRedeliver ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Truck className="w-4 h-4" />
+                  )}
+                  <span>Re-deliver to Courier</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -63,6 +63,12 @@ export class DatabaseObjectCache {
   private ledgerByCourier = new Map<string, ILedgerEntry[]>(); // courierId -> ledger array
   private courierBalances = new Map<string, number>(); // courierId -> running balance
 
+  private couriersHydrated = false;
+  private batchesHydrated = false;
+  private parcelsHydrated = false;
+  private settlementsHydrated = false;
+  private paymentsHydrated = false;
+
   private companySettings: ICompanySettings | null = null;
 
   // Metrics telemetry
@@ -148,6 +154,11 @@ export class DatabaseObjectCache {
     this.courierBalances.clear();
     this.companySettings = null;
     this.status = "COLD";
+    this.couriersHydrated = false;
+    this.batchesHydrated = false;
+    this.parcelsHydrated = false;
+    this.settlementsHydrated = false;
+    this.paymentsHydrated = false;
   }
 
   /* ---------------- Entity-Specific Object Cache & Fast Indices ---------------- */
@@ -158,13 +169,14 @@ export class DatabaseObjectCache {
     for (const c of couriers) {
       this.couriersMap.set(c._id, c);
     }
+    this.couriersHydrated = true;
     this.invalidateTag("couriers");
     this.invalidateTag("dashboard");
   }
 
   public getCouriers(): ICourier[] | null {
     this.totalReads++;
-    if (this.couriersMap.size === 0) {
+    if (!this.couriersHydrated) {
       this.misses++;
       return null;
     }
@@ -203,13 +215,14 @@ export class DatabaseObjectCache {
         this.batchesByCourier.get(b.courierId)!.add(b._id);
       }
     }
+    this.batchesHydrated = true;
     this.invalidateTag("batches");
     this.invalidateTag("dashboard");
   }
 
   public getBatches(): IBatch[] | null {
     this.totalReads++;
-    if (this.batchesMap.size === 0) {
+    if (!this.batchesHydrated) {
       this.misses++;
       return null;
     }
@@ -243,6 +256,7 @@ export class DatabaseObjectCache {
       this.indexParcel(p);
     }
 
+    this.parcelsHydrated = true;
     this.invalidateTag("parcels");
     this.invalidateTag("batches");
     this.invalidateTag("dashboard");
@@ -293,7 +307,7 @@ export class DatabaseObjectCache {
 
   public getParcels(): IParcel[] | null {
     this.totalReads++;
-    if (this.parcelsMap.size === 0) {
+    if (!this.parcelsHydrated) {
       this.misses++;
       return null;
     }
@@ -434,13 +448,14 @@ export class DatabaseObjectCache {
         this.settlementsByCourier.get(s.courierId)!.add(s._id);
       }
     }
+    this.settlementsHydrated = true;
     this.invalidateTag("settlements");
     this.invalidateTag("dashboard");
   }
 
   public getSettlements(): ISettlement[] | null {
     this.totalReads++;
-    if (this.settlementsMap.size === 0) {
+    if (!this.settlementsHydrated) {
       this.misses++;
       return null;
     }
@@ -474,13 +489,14 @@ export class DatabaseObjectCache {
         this.paymentsByCourier.get(p.courierId)!.add(p._id);
       }
     }
+    this.paymentsHydrated = true;
     this.invalidateTag("payments");
     this.invalidateTag("dashboard");
   }
 
   public getPayments(): IPayment[] | null {
     this.totalReads++;
-    if (this.paymentsMap.size === 0) {
+    if (!this.paymentsHydrated) {
       this.misses++;
       return null;
     }

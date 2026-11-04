@@ -251,23 +251,23 @@ export async function deleteCourier(id: string): Promise<{ success: boolean; mes
   objectCache.setCouriers(filtered);
 
   // Cascade cleanup any linked parcels, batches, settlements, payments, and ledger entries
-  const parcels = readJsonFile<IParcel>("parcels.json", getInitialParcels());
+  const parcels = readJsonFile<IParcel>("parcels.json", []);
   const remainingParcels = parcels.filter((p) => p.courierId !== id);
   writeJsonFile("parcels.json", remainingParcels);
 
-  const batches = readJsonFile<IBatch>("batches.json", getInitialBatches());
+  const batches = readJsonFile<IBatch>("batches.json", []);
   const remainingBatches = batches.filter((b) => b.courierId !== id);
   writeJsonFile("batches.json", remainingBatches);
 
-  const settlements = readJsonFile<ISettlement>("settlements.json", getInitialSettlements());
+  const settlements = readJsonFile<ISettlement>("settlements.json", []);
   const remainingSettlements = settlements.filter((s) => s.courierId !== id);
   writeJsonFile("settlements.json", remainingSettlements);
 
-  const payments = readJsonFile<IPayment>("payments.json", getInitialPayments());
+  const payments = readJsonFile<IPayment>("payments.json", []);
   const remainingPayments = payments.filter((pay) => pay.courierId !== id);
   writeJsonFile("payments.json", remainingPayments);
 
-  const ledger = readJsonFile<ILedgerEntry>("ledger.json", getInitialLedger());
+  const ledger = readJsonFile<ILedgerEntry>("ledger.json", []);
   const remainingLedger = ledger.filter((l) => l.courierId !== id);
   writeJsonFile("ledger.json", remainingLedger);
 
@@ -298,20 +298,19 @@ export async function deleteCourier(id: string): Promise<{ success: boolean; mes
 /* ==================== BATCHES ==================== */
 export async function getBatches(): Promise<IBatch[]> {
   const cached = objectCache.getBatches();
-  if (cached && cached.length > 0) return cached;
+  if (cached !== null) return cached;
 
   let batches: IBatch[] = [];
   try {
     if (await connectToDatabase()) {
       const docs = await Batch.find().sort({ batchDate: -1, createdAt: -1 }).lean();
-      if (docs.length > 0) batches = JSON.parse(JSON.stringify(docs));
+      batches = JSON.parse(JSON.stringify(docs));
+      objectCache.setBatches(batches);
+      return batches;
     }
   } catch (e) {}
 
-  if (batches.length === 0) {
-    batches = readJsonFile<IBatch>("batches.json", getInitialBatches());
-  }
-
+  batches = readJsonFile<IBatch>("batches.json", []);
   objectCache.setBatches(batches);
   return batches;
 }
@@ -324,7 +323,7 @@ export async function getBatchById(id: string): Promise<IBatch | null> {
 }
 
 export async function saveBatch(batchData: Partial<IBatch>): Promise<IBatch> {
-  const batches = readJsonFile<IBatch>("batches.json", getInitialBatches());
+  const batches = readJsonFile<IBatch>("batches.json", []);
   const now = new Date().toISOString();
 
   let savedBatch: IBatch;
@@ -376,20 +375,19 @@ export async function saveBatch(batchData: Partial<IBatch>): Promise<IBatch> {
 /* ==================== PARCELS ==================== */
 export async function getParcels(): Promise<IParcel[]> {
   const cached = objectCache.getParcels();
-  if (cached && cached.length > 0) return cached;
+  if (cached !== null) return cached;
 
   let parcels: IParcel[] = [];
   try {
     if (await connectToDatabase()) {
       const docs = await Parcel.find().sort({ createdAt: -1 }).lean();
-      if (docs.length > 0) parcels = JSON.parse(JSON.stringify(docs));
+      parcels = JSON.parse(JSON.stringify(docs));
+      objectCache.setParcels(parcels);
+      return parcels;
     }
   } catch (e) {}
 
-  if (parcels.length === 0) {
-    parcels = readJsonFile<IParcel>("parcels.json", getInitialParcels());
-  }
-
+  parcels = readJsonFile<IParcel>("parcels.json", []);
   objectCache.setParcels(parcels);
   return parcels;
 }
@@ -454,7 +452,7 @@ export async function checkDuplicates(
 export async function bulkSaveParcels(
   parcelList: Array<Partial<IParcel>>
 ): Promise<IParcel[]> {
-  const parcels = readJsonFile<IParcel>("parcels.json", getInitialParcels());
+  const parcels = readJsonFile<IParcel>("parcels.json", []);
   const now = new Date().toISOString();
   const created: IParcel[] = [];
 
@@ -511,7 +509,7 @@ export async function updateParcel(
   id: string,
   updates: Partial<IParcel>
 ): Promise<IParcel | null> {
-  const parcels = readJsonFile<IParcel>("parcels.json", getInitialParcels());
+  const parcels = readJsonFile<IParcel>("parcels.json", []);
   const idx = parcels.findIndex((p) => p._id === id);
   if (idx === -1) return null;
 
@@ -533,7 +531,7 @@ export async function bulkUpdateParcels(
   parcelIds: string[],
   updates: Partial<IParcel>
 ): Promise<number> {
-  const parcels = readJsonFile<IParcel>("parcels.json", getInitialParcels());
+  const parcels = readJsonFile<IParcel>("parcels.json", []);
   const now = new Date().toISOString();
   let count = 0;
 
@@ -557,7 +555,7 @@ export async function bulkUpdateParcels(
 }
 
 export async function deleteParcel(id: string): Promise<boolean> {
-  const parcels = readJsonFile<IParcel>("parcels.json", getInitialParcels());
+  const parcels = readJsonFile<IParcel>("parcels.json", []);
   const filtered = parcels.filter((p) => p._id !== id);
   writeJsonFile("parcels.json", filtered);
   try {
@@ -573,20 +571,19 @@ export async function deleteParcel(id: string): Promise<boolean> {
 /* ==================== SETTLEMENTS ==================== */
 export async function getSettlements(): Promise<ISettlement[]> {
   const cached = objectCache.getSettlements();
-  if (cached && cached.length > 0) return cached;
+  if (cached !== null) return cached;
 
   let settlements: ISettlement[] = [];
   try {
     if (await connectToDatabase()) {
       const docs = await Settlement.find().sort({ createdAt: -1 }).lean();
-      if (docs.length > 0) settlements = JSON.parse(JSON.stringify(docs));
+      settlements = JSON.parse(JSON.stringify(docs));
+      objectCache.setSettlements(settlements);
+      return settlements;
     }
   } catch (e) {}
 
-  if (settlements.length === 0) {
-    settlements = readJsonFile<ISettlement>("settlements.json", getInitialSettlements());
-  }
-
+  settlements = readJsonFile<ISettlement>("settlements.json", []);
   objectCache.setSettlements(settlements);
   return settlements;
 }
@@ -622,7 +619,7 @@ export async function createSettlement(data: {
   createdBy: string;
 }): Promise<ISettlement> {
   const now = new Date().toISOString();
-  const settlements = readJsonFile<ISettlement>("settlements.json", getInitialSettlements());
+  const settlements = readJsonFile<ISettlement>("settlements.json", []);
 
   // 1. Fetch eligible unsettled parcels for this courier
   const allParcels = await getParcels();
@@ -754,26 +751,25 @@ export async function createSettlement(data: {
 /* ==================== PAYMENTS ==================== */
 export async function getPayments(): Promise<IPayment[]> {
   const cached = objectCache.getPayments();
-  if (cached && cached.length > 0) return cached;
+  if (cached !== null) return cached;
 
   let payments: IPayment[] = [];
   try {
     if (await connectToDatabase()) {
       const docs = await Payment.find().sort({ paymentDate: -1, createdAt: -1 }).lean();
-      if (docs.length > 0) payments = JSON.parse(JSON.stringify(docs));
+      payments = JSON.parse(JSON.stringify(docs));
+      objectCache.setPayments(payments);
+      return payments;
     }
   } catch (e) {}
 
-  if (payments.length === 0) {
-    payments = readJsonFile<IPayment>("payments.json", getInitialPayments());
-  }
-
+  payments = readJsonFile<IPayment>("payments.json", []);
   objectCache.setPayments(payments);
   return payments;
 }
 
 export async function savePayment(paymentData: Partial<IPayment>): Promise<IPayment> {
-  const payments = readJsonFile<IPayment>("payments.json", getInitialPayments());
+  const payments = readJsonFile<IPayment>("payments.json", []);
   const now = new Date().toISOString();
   const courierId = paymentData.courierId || "";
   const courier = await getCourierById(courierId);
@@ -794,7 +790,7 @@ export async function savePayment(paymentData: Partial<IPayment>): Promise<IPaym
     allocationMethod = "auto_oldest";
   }
 
-  const settlements = readJsonFile<ISettlement>("settlements.json", getInitialSettlements());
+  const settlements = readJsonFile<ISettlement>("settlements.json", []);
   const allocations: IPaymentAllocation[] = [];
   let remainingPaymentAmount = amount;
   let unallocatedAmount = 0;
@@ -968,10 +964,10 @@ export async function getLedgerEntries(): Promise<ILedgerEntry[]> {
   try {
     if (await connectToDatabase()) {
       const docs = await LedgerEntry.find().sort({ transactionDate: -1, createdAt: -1 }).lean();
-      if (docs.length > 0) return JSON.parse(JSON.stringify(docs));
+      return JSON.parse(JSON.stringify(docs));
     }
   } catch (e) {}
-  return readJsonFile<ILedgerEntry>("ledger.json", getInitialLedger());
+  return readJsonFile<ILedgerEntry>("ledger.json", []);
 }
 
 export async function getCourierLedger(courierId: string): Promise<ILedgerEntry[]> {
@@ -1015,7 +1011,7 @@ export async function addLedgerEntry(entry: {
   debit: number;
   credit: number;
 }): Promise<ILedgerEntry> {
-  const ledger = readJsonFile<ILedgerEntry>("ledger.json", getInitialLedger());
+  const ledger = readJsonFile<ILedgerEntry>("ledger.json", []);
   const now = new Date().toISOString();
 
   // Find latest running balance for this courier

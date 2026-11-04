@@ -25,3 +25,4 @@ const CompanySettings: Model<ICompanySettingsDocument> =
   mongoose.model<ICompanySettingsDocument>("CompanySettings", CompanySettingsSchema);
 
 export default CompanySettings;
+

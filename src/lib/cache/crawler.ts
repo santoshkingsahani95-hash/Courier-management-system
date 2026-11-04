@@ -128,40 +128,40 @@ export class CacheCrawler {
     try {
       if (await connectToDatabase()) {
         const docs = await Batch.find().sort({ batchDate: -1, createdAt: -1 }).lean();
-        if (docs.length > 0) return JSON.parse(JSON.stringify(docs));
+        return JSON.parse(JSON.stringify(docs));
       }
     } catch (e) {}
-    return readJsonFileRaw<IBatch>("batches.json", getInitialBatches());
+    return readJsonFileRaw<IBatch>("batches.json", []);
   }
 
   private async fetchParcels(): Promise<IParcel[]> {
     try {
       if (await connectToDatabase()) {
         const docs = await Parcel.find().sort({ createdAt: -1 }).lean();
-        if (docs.length > 0) return JSON.parse(JSON.stringify(docs));
+        return JSON.parse(JSON.stringify(docs));
       }
     } catch (e) {}
-    return readJsonFileRaw<IParcel>("parcels.json", getInitialParcels());
+    return readJsonFileRaw<IParcel>("parcels.json", []);
   }
 
   private async fetchSettlements(): Promise<ISettlement[]> {
     try {
       if (await connectToDatabase()) {
         const docs = await Settlement.find().sort({ createdAt: -1 }).lean();
-        if (docs.length > 0) return JSON.parse(JSON.stringify(docs));
+        return JSON.parse(JSON.stringify(docs));
       }
     } catch (e) {}
-    return readJsonFileRaw<ISettlement>("settlements.json", getInitialSettlements());
+    return readJsonFileRaw<ISettlement>("settlements.json", []);
   }
 
   private async fetchPayments(): Promise<IPayment[]> {
     try {
       if (await connectToDatabase()) {
         const docs = await Payment.find().sort({ paymentDate: -1, createdAt: -1 }).lean();
-        if (docs.length > 0) return JSON.parse(JSON.stringify(docs));
+        return JSON.parse(JSON.stringify(docs));
       }
     } catch (e) {}
-    return readJsonFileRaw<IPayment>("payments.json", getInitialPayments());
+    return readJsonFileRaw<IPayment>("payments.json", []);
   }
 
   private async fetchSettings(): Promise<ICompanySettings | null> {
@@ -172,7 +172,7 @@ export class CacheCrawler {
   /* ---------------- Secondary Crawlers ---------------- */
 
   private async crawlCouriersLedger(couriers: ICourier[]): Promise<void> {
-    const allLedger = readJsonFileRaw<ILedgerEntry>("ledger.json", getInitialLedger());
+    const allLedger = readJsonFileRaw<ILedgerEntry>("ledger.json", []);
     for (const c of couriers) {
       const courierEntries = allLedger
         .filter((l) => l.courierId === c._id)

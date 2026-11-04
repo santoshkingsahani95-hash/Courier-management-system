@@ -10,13 +10,13 @@
     "status": "active",
     "notes": "Inside Kathmandu valley deliveries. Daily 3 PM pickup.",
     "createdAt": "2026-10-01T08:00:00.000Z",
-    "updatedAt": "2026-11-03T11:27:25.690Z",
-    "currentDue": 3000,
-    "totalParcels": 4,
-    "deliveredCount": 3,
-    "returnedCount": 1,
+    "updatedAt": "2026-11-04T05:21:41.108Z",
+    "currentDue": 0,
+    "totalParcels": 0,
+    "deliveredCount": 0,
+    "returnedCount": 0,
     "pendingCount": 0,
-    "totalCOD": 11600
+    "totalCOD": 0
   },
   {
     "_id": "c-002",
@@ -29,7 +29,13 @@
     "status": "active",
     "notes": "Ring road & sub-valley coverage (Bhaktapur, Lalitpur).",
     "createdAt": "2026-10-01T08:00:00.000Z",
-    "updatedAt": "2026-11-03T07:29:46.015Z"
+    "updatedAt": "2026-11-04T05:21:41.108Z",
+    "currentDue": 0,
+    "totalParcels": 0,
+    "deliveredCount": 0,
+    "returnedCount": 0,
+    "pendingCount": 0,
+    "totalCOD": 0
   },
   {
     "_id": "c-003",
@@ -42,7 +48,13 @@
     "status": "active",
     "notes": "Express inner city small parcel deliveries.",
     "createdAt": "2026-10-01T08:00:00.000Z",
-    "updatedAt": "2026-11-03T07:32:21.047Z"
+    "updatedAt": "2026-11-04T05:21:41.108Z",
+    "currentDue": 0,
+    "totalParcels": 0,
+    "deliveredCount": 0,
+    "returnedCount": 0,
+    "pendingCount": 0,
+    "totalCOD": 0
   },
   {
     "_id": "c-004",
@@ -55,6 +67,12 @@
     "status": "active",
     "notes": "All major districts outside Kathmandu valley (Pokhara, Biratnagar, Narayangarh).",
     "createdAt": "2026-10-01T08:00:00.000Z",
-    "updatedAt": "2026-11-03T07:33:54.068Z"
+    "updatedAt": "2026-11-04T05:21:41.108Z",
+    "currentDue": 0,
+    "totalParcels": 0,
+    "deliveredCount": 0,
+    "returnedCount": 0,
+    "pendingCount": 0,
+    "totalCOD": 0
   }
 ]

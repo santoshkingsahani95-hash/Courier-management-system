@@ -12,6 +12,8 @@ import {
   ILedgerEntry,
   IAuditLog,
   ICompanySettings,
+  IReturnRecord,
+  BatchSettlementStatus,
 } from "./types";
 import {
   getInitialCouriers,
@@ -33,6 +35,7 @@ import Payment from "@/models/Payment";
 import LedgerEntry from "@/models/LedgerEntry";
 import AuditLog from "@/models/AuditLog";
 import CompanySettings from "@/models/CompanySettings";
+import ReturnRecord from "@/models/ReturnRecord";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 
@@ -297,27 +300,54 @@ export async function deleteCourier(id: string): Promise<{ success: boolean; mes
 
 /* ==================== BATCHES ==================== */
 export async function getBatches(): Promise<IBatch[]> {
-  const cached = objectCache.getBatches();
-  if (cached !== null) return cached;
-
   let batches: IBatch[] = [];
   try {
     if (await connectToDatabase()) {
       const docs = await Batch.find().sort({ batchDate: -1, createdAt: -1 }).lean();
       batches = JSON.parse(JSON.stringify(docs));
-      objectCache.setBatches(batches);
-      return batches;
     }
   } catch (e) {}
 
-  batches = readJsonFile<IBatch>("batches.json", []);
-  objectCache.setBatches(batches);
-  return batches;
+  if (batches.length === 0) {
+    batches = readJsonFile<IBatch>("batches.json", []);
+  }
+
+  // Recalculate dynamic counts and settlement status from actual parcel records
+  const parcels = await getParcels();
+  const enrichedBatches = batches.map((b) => {
+    const bParcels = parcels.filter(
+      (p) => p.batchId === b._id || p.batchNumber === b.batchNumber
+    );
+    const totalPackages = bParcels.length > 0 ? bParcels.length : (b.totalPackages || 0);
+    const deliveredCount = bParcels.filter((p) => p.status === "Delivered").length;
+    const returnedCount = bParcels.filter((p) => p.status === "Returned").length;
+    const pendingCount = bParcels.filter((p) => p.status === "Pending").length;
+    const totalCOD = bParcels.reduce((sum, p) => sum + (p.codAmount || 0), 0);
+    const settledCount = bParcels.filter((p) => p.settlementStatus === "Settled").length;
+
+    let settlementStatus: BatchSettlementStatus = "Unsettled";
+    if (totalPackages > 0 && settledCount === totalPackages) {
+      settlementStatus = "Settled";
+    } else if (settledCount > 0) {
+      settlementStatus = "Partially Settled";
+    }
+
+    return {
+      ...b,
+      totalPackages,
+      totalCOD: bParcels.length > 0 ? totalCOD : b.totalCOD,
+      deliveredCount,
+      returnedCount,
+      pendingCount,
+      settlementStatus,
+    };
+  });
+
+  objectCache.setBatches(enrichedBatches);
+  return enrichedBatches;
 }
 
 export async function getBatchById(id: string): Promise<IBatch | null> {
-  const cached = objectCache.getBatchById(id);
-  if (cached) return cached;
   const batches = await getBatches();
   return batches.find((b) => b._id === id || b.batchNumber === id) || null;
 }
@@ -351,6 +381,10 @@ export async function saveBatch(batchData: Partial<IBatch>): Promise<IBatch> {
       batchDate: batchData.batchDate || now.split("T")[0],
       totalPackages: Number(batchData.totalPackages) || 0,
       totalCOD: Number(batchData.totalCOD) || 0,
+      deliveredCount: 0,
+      returnedCount: 0,
+      pendingCount: Number(batchData.totalPackages) || 0,
+      settlementStatus: "Unsettled",
       notes: batchData.notes || "",
       createdBy: batchData.createdBy || "Staff",
       createdAt: now,
@@ -475,6 +509,10 @@ export async function bulkSaveParcels(
       status: p.status || "Pending",
       deliveryDate: p.deliveryDate,
       returnDate: p.returnDate,
+      returnReason: p.returnReason || "",
+      customReason: p.customReason || "",
+      returnedBy: p.returnedBy || "",
+      returnRecordId: p.returnRecordId || "",
       actualDeliveryCharge: p.actualDeliveryCharge,
       actualReturnCharge: p.actualReturnCharge,
       settlementId: p.settlementId,
@@ -566,6 +604,59 @@ export async function deleteParcel(id: string): Promise<boolean> {
 
   cacheCrawler.triggerAsyncRecrawl(["parcels", "batches", "dashboard", "returns"]);
   return true;
+}
+
+/* ==================== RETURN RECORDS ==================== */
+export async function getReturnRecords(): Promise<IReturnRecord[]> {
+  try {
+    if (await connectToDatabase()) {
+      const docs = await ReturnRecord.find().sort({ returnDate: -1, createdAt: -1 }).lean();
+      return JSON.parse(JSON.stringify(docs));
+    }
+  } catch (e) {}
+  return readJsonFile<IReturnRecord>("return_records.json", []);
+}
+
+export async function getReturnRecordsByBatch(batchId: string): Promise<IReturnRecord[]> {
+  const records = await getReturnRecords();
+  return records.filter((r) => r.batchId === batchId && r.returnStatus !== "Reverted");
+}
+
+export async function saveReturnRecord(record: Partial<IReturnRecord>): Promise<IReturnRecord> {
+  const records = readJsonFile<IReturnRecord>("return_records.json", []);
+  const now = new Date().toISOString();
+
+  const newRecord: IReturnRecord = {
+    _id: record._id || "ret-" + Date.now() + "-" + Math.random().toString(36).substring(2, 6),
+    parcelId: record.parcelId || "",
+    batchId: record.batchId || "",
+    batchNumber: record.batchNumber || "",
+    courierId: record.courierId || "",
+    courierName: record.courierName || "",
+    customerName: record.customerName || "",
+    mobile: record.mobile || "",
+    trackingId: record.trackingId || "",
+    sku: record.sku || "",
+    codAmount: Number(record.codAmount) || 0,
+    returnDate: record.returnDate || now.split("T")[0],
+    returnReason: record.returnReason || "Customer Refused",
+    customReason: record.customReason || "",
+    returnStatus: record.returnStatus || "Returned",
+    recordedBy: record.recordedBy || "Staff",
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  records.unshift(newRecord);
+  writeJsonFile("return_records.json", records);
+
+  try {
+    if (await connectToDatabase()) {
+      await ReturnRecord.create(newRecord);
+    }
+  } catch (e) {}
+
+  return newRecord;
 }
 
 /* ==================== SETTLEMENTS ==================== */
@@ -683,6 +774,8 @@ export async function createSettlement(data: {
     toDate: data.toDate,
     deliveredParcelsCount: deliveredParcels.length,
     returnedParcelsCount: returnedParcels.length,
+    pendingParcelsCount: eligibleParcels.filter((p) => p.status === "Pending").length,
+    totalParcelsCount: eligibleParcels.length,
     grossCOD,
     deliveryCharges,
     returnCharges,

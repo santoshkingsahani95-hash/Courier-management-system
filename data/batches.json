@@ -1,1 +1,38 @@
-[]
+[
+  {
+    "_id": "bat-test-001",
+    "batchNumber": "BAT-20261104-001",
+    "courierId": "c-001",
+    "courierName": "Google Express",
+    "batchDate": "2026-11-04",
+    "totalPackages": 20,
+    "totalCOD": 40000,
+    "notes": "Morning dispatch batch 1",
+    "createdBy": "Admin",
+    "createdAt": "2026-11-04T09:50:17.753Z"
+  },
+  {
+    "_id": "bat-test-002",
+    "batchNumber": "BAT-20261104-002",
+    "courierId": "c-002",
+    "courierName": "KDM Express",
+    "batchDate": "2026-11-04",
+    "totalPackages": 15,
+    "totalCOD": 30000,
+    "notes": "Midday dispatch batch 2",
+    "createdBy": "Admin",
+    "createdAt": "2026-11-04T09:50:17.753Z"
+  },
+  {
+    "_id": "bat-test-003",
+    "batchNumber": "BAT-20261104-003",
+    "courierId": "c-003",
+    "courierName": "SP Express",
+    "batchDate": "2026-11-04",
+    "totalPackages": 15,
+    "totalCOD": 30000,
+    "notes": "Afternoon dispatch batch 3",
+    "createdBy": "Admin",
+    "createdAt": "2026-11-04T09:50:17.753Z"
+  }
+]

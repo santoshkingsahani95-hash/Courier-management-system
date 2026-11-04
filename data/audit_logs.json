@@ -1,1 +1,61 @@
-[]
+[
+  {
+    "_id": "aud-1793775171815-ylxu",
+    "userName": "Staff",
+    "action": "ADD_RETURN_ENTRIES",
+    "entityType": "Parcel",
+    "entityId": "6 return entries",
+    "newValue": {
+      "count": 6,
+      "totalAdjusted": 8100,
+      "courierId": "c-003"
+    },
+    "timestamp": "2026-11-04T06:52:51.815Z"
+  },
+  {
+    "_id": "aud-1793773723532-mg75",
+    "userName": "Admin",
+    "action": "FINALIZE_SETTLEMENT",
+    "entityType": "Settlement",
+    "entityId": "s-1793773723528",
+    "newValue": {
+      "settlementNumber": "SET-20261104-002",
+      "courierName": "Google Express",
+      "grossCOD": 0,
+      "totalReceivable": 0,
+      "remainingDue": 0,
+      "totalPaid": 0
+    },
+    "timestamp": "2026-11-04T06:28:43.531Z"
+  },
+  {
+    "_id": "aud-1793773364281-7ntw",
+    "userName": "Admin",
+    "action": "FINALIZE_SETTLEMENT",
+    "entityType": "Settlement",
+    "entityId": "s-1793773364278",
+    "newValue": {
+      "settlementNumber": "SET-20261104-001",
+      "courierName": "Google Express",
+      "grossCOD": 0,
+      "totalReceivable": 0,
+      "remainingDue": 0,
+      "totalPaid": 0
+    },
+    "timestamp": "2026-11-04T06:22:44.281Z"
+  },
+  {
+    "_id": "aud-1793773040842-9ia8",
+    "userName": "Staff",
+    "action": "BULK_PARCEL_ENTRY",
+    "entityType": "Batch",
+    "entityId": "b-1793773040839",
+    "newValue": {
+      "batchNumber": "BAT-20261104-001",
+      "totalPackages": 12,
+      "totalCOD": 13200,
+      "courierName": "Google Express"
+    },
+    "timestamp": "2026-11-04T06:17:20.842Z"
+  }
+]

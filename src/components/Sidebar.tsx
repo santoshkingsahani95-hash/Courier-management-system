@@ -17,6 +17,7 @@ import {
   Settings,
   ShieldCheck,
   RotateCcw,
+  History,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +34,7 @@ export default function Sidebar({ userRole = "admin", userName = "User" }: Sideb
     { name: "New Entry", href: "/new-entry", icon: PlusCircle, highlight: true },
     { name: "Batches", href: "/batches", icon: Layers },
     { name: "Returns", href: "/returns", icon: RotateCcw, badge: "Inward" },
+    { name: "History", href: "/history", icon: History },
     { name: "Couriers", href: "/couriers", icon: Truck },
     { name: "Settlements", href: "/settlements", icon: Calculator },
     { name: "Payments", href: "/payments", icon: CreditCard },

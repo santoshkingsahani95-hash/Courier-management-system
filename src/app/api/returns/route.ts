@@ -7,6 +7,8 @@ import {
   saveParcel,
   addAuditLog,
   getCourierById,
+  saveReturnRecord,
+  getReturnRecords,
 } from "@/lib/store";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -110,6 +112,7 @@ export async function POST(request: Request) {
       courierId,
       parcelIds,
       returnReason = "Customer Refused",
+      customReason = "",
       returnDate = todayStr,
       remarks,
       // For manual new entry
@@ -120,6 +123,9 @@ export async function POST(request: Request) {
       codAmount,
     } = body;
 
+    const finalReason =
+      returnReason === "Other" && customReason.trim() ? customReason.trim() : returnReason;
+
     // CASE 1: Processing existing parcel(s)
     if (Array.isArray(parcelIds) && parcelIds.length > 0) {
       const allParcels = await getParcels();
@@ -129,38 +135,73 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Selected parcels not found" }, { status: 404 });
       }
 
-      const updates = {
-        status: "Returned" as const,
-        returnDate: returnDate || todayStr,
-        remarks: remarks ? `${returnReason} - ${remarks}` : returnReason,
-        actualDeliveryCharge: 0,
-        actualReturnCharge: 0,
-      };
+      // Check: Prevent duplicate return
+      const eligibleToReturn = parcelsToReturn.filter((p) => p.status !== "Returned");
+      if (eligibleToReturn.length === 0) {
+        return NextResponse.json(
+          { error: "Selected parcel(s) are already marked as Returned" },
+          { status: 400 }
+        );
+      }
 
-      await bulkUpdateParcels(parcelIds, updates);
+      for (const p of eligibleToReturn) {
+        const retRecord = await saveReturnRecord({
+          parcelId: p._id,
+          batchId: p.batchId || "",
+          batchNumber: p.batchNumber || "",
+          courierId: p.courierId,
+          courierName: p.courierName,
+          customerName: p.customerName,
+          mobile: p.mobile,
+          trackingId: p.trackingId,
+          sku: p.sku,
+          codAmount: p.codAmount,
+          returnDate: returnDate || todayStr,
+          returnReason: finalReason,
+          customReason: customReason || "",
+          returnStatus: "Returned",
+          recordedBy: currentUser?.name || "Staff",
+        });
 
-      const adjustedCOD = parcelsToReturn.reduce((sum, p) => sum + (p.codAmount || 0), 0);
+        await updateParcel(p._id, {
+          status: "Returned" as const,
+          returnDate: returnDate || todayStr,
+          returnReason: finalReason,
+          customReason: customReason || "",
+          returnedBy: currentUser?.name || "Staff",
+          returnRecordId: retRecord._id,
+          remarks: remarks
+            ? `${finalReason} - ${remarks}`
+            : p.remarks
+            ? `${p.remarks} [Return: ${finalReason}]`
+            : finalReason,
+          actualDeliveryCharge: 0,
+          actualReturnCharge: 0,
+        });
+      }
+
+      const adjustedCOD = eligibleToReturn.reduce((sum, p) => sum + (p.codAmount || 0), 0);
 
       await addAuditLog({
         userId: currentUser?._id,
         userName: currentUser?.name || "Staff",
         action: "PROCESS_RETURNS",
         entityType: "Parcel",
-        entityId: `${parcelIds.length} parcels`,
+        entityId: `${eligibleToReturn.length} parcels`,
         newValue: {
           courierId,
-          count: parcelIds.length,
+          count: eligibleToReturn.length,
           adjustedCOD,
-          returnReason,
+          returnReason: finalReason,
           returnDate,
         },
       });
 
       return NextResponse.json({
         success: true,
-        count: parcelIds.length,
+        count: eligibleToReturn.length,
         adjustedCOD,
-        message: `Successfully received ${parcelIds.length} returned package(s). Rs. ${adjustedCOD.toLocaleString()} COD automatically deducted from courier receivable.`,
+        message: `Successfully received ${eligibleToReturn.length} returned package(s). Rs. ${adjustedCOD.toLocaleString()} COD automatically deducted from courier receivable.`,
       });
     }
 
@@ -185,10 +226,36 @@ export async function POST(request: Request) {
         );
       }
 
+      const retRecord = await saveReturnRecord({
+        parcelId: matched._id,
+        batchId: matched.batchId || "",
+        batchNumber: matched.batchNumber || "",
+        courierId: matched.courierId,
+        courierName: matched.courierName,
+        customerName: matched.customerName,
+        mobile: matched.mobile,
+        trackingId: matched.trackingId,
+        sku: matched.sku,
+        codAmount: matched.codAmount,
+        returnDate: returnDate || todayStr,
+        returnReason: finalReason,
+        customReason: customReason || "",
+        returnStatus: "Returned",
+        recordedBy: currentUser?.name || "Staff",
+      });
+
       const updates = {
         status: "Returned" as const,
         returnDate: returnDate || todayStr,
-        remarks: remarks ? `${returnReason} - ${remarks}` : returnReason,
+        returnReason: finalReason,
+        customReason: customReason || "",
+        returnedBy: currentUser?.name || "Staff",
+        returnRecordId: retRecord._id,
+        remarks: remarks
+          ? `${finalReason} - ${remarks}`
+          : matched.remarks
+          ? `${matched.remarks} [Return: ${finalReason}]`
+          : finalReason,
         actualDeliveryCharge: 0,
         actualReturnCharge: 0,
       };
@@ -201,7 +268,7 @@ export async function POST(request: Request) {
         action: "PROCESS_RETURN_SINGLE",
         entityType: "Parcel",
         entityId: matched._id,
-        newValue: { trackingId: matched.trackingId, codAmount: matched.codAmount, returnReason },
+        newValue: { trackingId: matched.trackingId, codAmount: matched.codAmount, returnReason: finalReason },
       });
 
       return NextResponse.json({
@@ -209,7 +276,7 @@ export async function POST(request: Request) {
         count: 1,
         adjustedCOD: matched.codAmount,
         parcel: { ...matched, ...updates },
-        message: `Package ${matched.trackingId} (${matched.customerName}) marked as Returned. Rs. ${matched.codAmount.toLocaleString()} adjusted.`,
+        message: `Package ${matched.trackingId || matched.mobile} (${matched.customerName}) marked as Returned. Rs. ${matched.codAmount.toLocaleString()} adjusted.`,
       });
     }
 
@@ -317,7 +384,10 @@ export async function PUT(request: Request) {
 
     const updates: any = {
       status: newStatus,
-      returnDate: undefined,
+      returnDate: "",
+      returnReason: "",
+      customReason: "",
+      returnedBy: "",
       remarks: `Reverted from Return to ${newStatus}`,
     };
 

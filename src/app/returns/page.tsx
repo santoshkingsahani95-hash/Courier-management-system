@@ -21,6 +21,15 @@ import {
 } from "lucide-react";
 import { formatNPR, formatDate } from "@/lib/utils";
 
+const RETURN_REASONS = [
+  "Customer unavailable",
+  "Wrong address",
+  "Customer refused parcel",
+  "Customer phone switched off",
+  "Delivery unsuccessful",
+  "Other",
+];
+
 const DEFAULT_COURIER_LIST = [
   { _id: "c-001", name: "Google Express", serviceArea: "Inside Valley", defaultDeliveryCharge: 70 },
   { _id: "c-002", name: "KDM Express", serviceArea: "Inside Valley", defaultDeliveryCharge: 150 },
@@ -58,6 +67,13 @@ export default function ReturnsPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [successToast, setSuccessToast] = useState<string | null>(null);
 
+  // Confirm Return Modal (for marking pending parcel(s) as returned with mandatory reason)
+  const [showConfirmReturnModal, setShowConfirmReturnModal] = useState(false);
+  const [targetParcelsToReturn, setTargetParcelsToReturn] = useState<any[]>([]);
+  const [actionReturnReason, setActionReturnReason] = useState("Customer refused parcel");
+  const [actionCustomReason, setActionCustomReason] = useState("");
+  const [actionReturnDate, setActionReturnDate] = useState(() => new Date().toISOString().split("T")[0]);
+
   // Quick inline return toggle & form
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [inlineName, setInlineName] = useState("");
@@ -69,7 +85,8 @@ export default function ReturnsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [modalCourierId, setModalCourierId] = useState("c-001");
   const [modalDate, setModalDate] = useState(() => new Date().toISOString().split("T")[0]);
-  const [modalReason, setModalReason] = useState("Customer Refused");
+  const [modalReason, setModalReason] = useState("Customer refused parcel");
+  const [modalCustomReason, setModalCustomReason] = useState("");
   const [modalRows, setModalRows] = useState<ReturnModalRow[]>([
     { id: "row-1", customerName: "", mobile: "", sku: "", codAmount: "", remarks: "" },
   ]);
@@ -133,39 +150,42 @@ export default function ReturnsPage() {
     setTimeout(() => setSuccessToast(null), 4000);
   }
 
-  // Mark single parcel as returned
-  async function handleMarkSingleReturned(parcel: any) {
-    setIsProcessing(true);
-    try {
-      const res = await fetch("/api/returns", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          courierId: selectedCourierId,
-          parcelIds: [parcel._id],
-          returnReason: "Customer Refused",
-        }),
-      });
-
-      const d = await res.json();
-      if (res.ok) {
-        showMessage(`✓ Returned "${parcel.customerName}". Deducted ${formatNPR(parcel.codAmount)}.`);
-        fetchReturns();
-      } else {
-        alert(d.error || "Failed to mark return");
-      }
-    } catch (e: any) {
-      alert(e.message || "An error occurred");
-    } finally {
-      setIsProcessing(false);
-    }
+  // Open return confirmation modal for single parcel
+  function openReturnModalForSingle(parcel: any) {
+    setTargetParcelsToReturn([parcel]);
+    setActionReturnReason("Customer refused parcel");
+    setActionCustomReason("");
+    setActionReturnDate(new Date().toISOString().split("T")[0]);
+    setShowConfirmReturnModal(true);
   }
 
-  // Mark multiple selected parcels as returned
-  async function handleMarkBulkReturned() {
-    if (selectedPendingIds.length === 0) return;
+  // Open return confirmation modal for bulk selected parcels
+  function openReturnModalForBulk() {
     const selectedItems = pendingParcels.filter((p) => selectedPendingIds.includes(p._id));
-    const totalCOD = selectedItems.reduce((sum, p) => sum + (p.codAmount || 0), 0);
+    if (selectedItems.length === 0) return;
+    setTargetParcelsToReturn(selectedItems);
+    setActionReturnReason("Customer refused parcel");
+    setActionCustomReason("");
+    setActionReturnDate(new Date().toISOString().split("T")[0]);
+    setShowConfirmReturnModal(true);
+  }
+
+  // Process and save return records with mandatory return reason
+  async function handleConfirmReturnAction() {
+    if (targetParcelsToReturn.length === 0) return;
+
+    const finalReason =
+      actionReturnReason === "Other" && actionCustomReason.trim()
+        ? actionCustomReason.trim()
+        : actionReturnReason;
+
+    if (actionReturnReason === "Other" && !actionCustomReason.trim()) {
+      alert("Please specify the custom return reason.");
+      return;
+    }
+
+    const ids = targetParcelsToReturn.map((p) => p._id);
+    const totalCOD = targetParcelsToReturn.reduce((sum, p) => sum + (p.codAmount || 0), 0);
 
     setIsProcessing(true);
     try {
@@ -174,15 +194,18 @@ export default function ReturnsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           courierId: selectedCourierId,
-          parcelIds: selectedPendingIds,
-          returnReason: "Customer Refused",
+          parcelIds: ids,
+          returnReason: finalReason,
+          customReason: actionReturnReason === "Other" ? actionCustomReason.trim() : "",
+          returnDate: actionReturnDate,
         }),
       });
 
       const d = await res.json();
       if (res.ok) {
-        showMessage(`✓ Processed ${selectedPendingIds.length} returns. Total ${formatNPR(totalCOD)} deducted.`);
-        setSelectedPendingIds([]);
+        showMessage(`✓ Recorded return for ${ids.length} parcel(s) [Reason: ${finalReason}]. Deducted ${formatNPR(totalCOD)}.`);
+        setShowConfirmReturnModal(false);
+        setSelectedPendingIds((prev) => prev.filter((id) => !ids.includes(id)));
         fetchReturns();
       } else {
         alert(d.error || "Failed to process returns");
@@ -277,6 +300,16 @@ export default function ReturnsPage() {
       return;
     }
 
+    const finalModalReason =
+      modalReason === "Other" && modalCustomReason.trim()
+        ? modalCustomReason.trim()
+        : modalReason;
+
+    if (modalReason === "Other" && !modalCustomReason.trim()) {
+      alert("Please enter a custom return reason.");
+      return;
+    }
+
     setIsProcessing(true);
     try {
       const entriesPayload = validEntries.map((r) => ({
@@ -286,7 +319,8 @@ export default function ReturnsPage() {
         sku: r.sku.trim(),
         codAmount: Number(r.codAmount) || 0,
         remarks: r.remarks.trim(),
-        returnReason: modalReason,
+        returnReason: finalModalReason,
+        customReason: modalReason === "Other" ? modalCustomReason.trim() : "",
         returnDate: modalDate,
       }));
 
@@ -296,7 +330,8 @@ export default function ReturnsPage() {
         body: JSON.stringify({
           courierId: modalCourierId,
           entries: entriesPayload,
-          returnReason: modalReason,
+          returnReason: finalModalReason,
+          customReason: modalReason === "Other" ? modalCustomReason.trim() : "",
           returnDate: modalDate,
         }),
       });
@@ -307,6 +342,7 @@ export default function ReturnsPage() {
         setShowAddModal(false);
         // Reset modal form
         setModalRows([{ id: "row-1", customerName: "", mobile: "", sku: "", codAmount: "", remarks: "" }]);
+        setModalCustomReason("");
         fetchReturns();
       } else {
         alert(d.error || "Failed to record return entries");
@@ -539,7 +575,7 @@ export default function ReturnsPage() {
                 Clear
               </button>
               <button
-                onClick={handleMarkBulkReturned}
+                onClick={openReturnModalForBulk}
                 disabled={isProcessing}
                 className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white rounded-lg font-bold text-xs flex items-center space-x-1.5 transition-colors"
               >
@@ -625,7 +661,7 @@ export default function ReturnsPage() {
                       </td>
                       <td className="py-2 px-4 text-center">
                         <button
-                          onClick={() => handleMarkSingleReturned(p)}
+                          onClick={() => openReturnModalForSingle(p)}
                           disabled={isProcessing}
                           className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-lg text-[11px] transition-colors"
                         >
@@ -733,7 +769,7 @@ export default function ReturnsPage() {
                 <th className="py-2.5 px-4">Courier Partner</th>
                 <th className="py-2.5 px-4">SKU</th>
                 <th className="py-2.5 px-4 text-right">Deducted COD</th>
-                <th className="py-2.5 px-4">Remarks</th>
+                <th className="py-2.5 px-4">Return Reason</th>
                 <th className="py-2.5 px-4 text-center">Action</th>
               </tr>
             </thead>
@@ -766,8 +802,13 @@ export default function ReturnsPage() {
                     <td className="py-2.5 px-4 text-right font-black text-rose-700 whitespace-nowrap">
                       - {formatNPR(p.codAmount)}
                     </td>
-                    <td className="py-2.5 px-4 text-slate-600 text-xs max-w-xs truncate">
-                      {p.remarks || "Customer Refused"}
+                    <td className="py-2.5 px-4">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                        {p.returnReason || p.remarks || "Customer refused parcel"}
+                      </span>
+                      {p.returnedBy && (
+                        <div className="text-[10px] text-slate-400 mt-0.5">By: {p.returnedBy}</div>
+                      )}
                     </td>
                     <td className="py-2.5 px-4 text-center">
                       <button
@@ -861,21 +902,30 @@ export default function ReturnsPage() {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Default Reason</label>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Return Reason <span className="text-red-500">*</span>
+                  </label>
                   <select
                     value={modalReason}
                     onChange={(e) => setModalReason(e.target.value)}
-                    className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg font-medium text-slate-800"
+                    className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500"
                   >
-                    <option value="Customer Refused">Customer Refused at Doorstep</option>
-                    <option value="Phone Switched Off">Phone Switched Off / Unreachable</option>
-                    <option value="Door Locked">Door Locked / Rescheduled Failed</option>
-                    <option value="Wrong Item / Size Issue">Wrong Item / Size Issue</option>
-                    <option value="Order Cancelled">Order Cancelled by Customer</option>
-                    <option value="Address Incomplete">Address Incomplete / Out of Area</option>
-                    <option value="Damaged in Transit">Damaged in Transit</option>
-                    <option value="Other">Other</option>
+                    {RETURN_REASONS.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
                   </select>
+                  {modalReason === "Other" && (
+                    <input
+                      type="text"
+                      placeholder="Specify custom return reason..."
+                      value={modalCustomReason}
+                      onChange={(e) => setModalCustomReason(e.target.value)}
+                      className="mt-2 w-full px-2.5 py-1.5 bg-white border border-rose-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-rose-500"
+                      required
+                    />
+                  )}
                 </div>
               </div>
 
@@ -1019,6 +1069,135 @@ export default function ReturnsPage() {
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MANDATORY RETURN REASON CONFIRMATION MODAL                                */}
+      {/* ========================================================================= */}
+      {showConfirmReturnModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden animate-in zoom-in-95">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-rose-50/50">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-9 h-9 rounded-xl bg-rose-100 flex items-center justify-center text-rose-600">
+                  <RotateCcw className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-900 text-base">Record Parcel Return</h3>
+                  <p className="text-xs text-slate-500">
+                    Specify the return reason to automatically update courier records.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowConfirmReturnModal(false)}
+                className="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 text-xs">
+              {/* Target info card */}
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                {targetParcelsToReturn.length === 1 ? (
+                  <div className="space-y-1">
+                    <div className="font-bold text-slate-900 text-sm">
+                      {targetParcelsToReturn[0].customerName}
+                    </div>
+                    <div className="flex items-center space-x-3 text-slate-600 font-mono">
+                      <span>Phone: {targetParcelsToReturn[0].mobile || "-"}</span>
+                      <span>&bull;</span>
+                      <span>SKU: {targetParcelsToReturn[0].sku || "-"}</span>
+                    </div>
+                    <div className="text-rose-700 font-bold pt-1">
+                      COD to Deduct: {formatNPR(targetParcelsToReturn[0].codAmount || 0)}
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <span className="font-bold text-slate-900 text-sm">
+                      {targetParcelsToReturn.length} parcels selected for return
+                    </span>
+                    <div className="text-rose-700 font-bold mt-1">
+                      Total COD to Deduct:{" "}
+                      {formatNPR(
+                        targetParcelsToReturn.reduce((sum, p) => sum + (p.codAmount || 0), 0)
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Date */}
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Return Date</label>
+                <input
+                  type="date"
+                  value={actionReturnDate}
+                  onChange={(e) => setActionReturnDate(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                />
+              </div>
+
+              {/* Mandatory Reason */}
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Return Reason <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={actionReturnReason}
+                  onChange={(e) => setActionReturnReason(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-500 cursor-pointer"
+                >
+                  {RETURN_REASONS.map((reason) => (
+                    <option key={reason} value={reason}>
+                      {reason}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Custom reason input if "Other" */}
+              {actionReturnReason === "Other" && (
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Custom Return Reason <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter specific return reason..."
+                    value={actionCustomReason}
+                    onChange={(e) => setActionCustomReason(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-rose-300 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-rose-500"
+                    required
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end space-x-2 text-xs">
+              <button
+                type="button"
+                onClick={() => setShowConfirmReturnModal(false)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmReturnAction}
+                disabled={isProcessing}
+                className="px-5 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white rounded-xl font-bold shadow-xs flex items-center space-x-1.5 transition-colors"
+              >
+                {isProcessing && <Loader2 className="w-4 h-4 animate-spin" />}
+                <span>Confirm Return</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

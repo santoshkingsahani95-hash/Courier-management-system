@@ -342,20 +342,45 @@ export default function SettlementsPage() {
           </div>
 
           <div className="mt-4 space-y-3 text-xs font-medium">
-            {/* Delivered Parcels Count */}
-            <div className="flex justify-between items-center py-1 text-slate-600">
-              <span>Delivered Parcels:</span>
-              <span className="font-bold text-slate-800">
-                {calcPreview?.deliveredCount || 0} parcels
-              </span>
-            </div>
-
-            {/* Returned Parcels Count */}
-            <div className="flex justify-between items-center py-1 text-slate-600">
-              <span>Returned Parcels:</span>
-              <span className="font-bold text-slate-800">
-                {calcPreview?.returnedCount || 0} parcels
-              </span>
+            {/* Reconciliation Summary: Total Handed Over = Delivered + Returned + Pending */}
+            <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-xl space-y-2">
+              <div className="flex justify-between items-center text-xs font-bold text-blue-900 border-b border-blue-200/60 pb-1.5">
+                <span>Total Parcels Handed Over:</span>
+                <span className="font-extrabold text-blue-950 font-mono">
+                  {(calcPreview?.deliveredCount || 0) +
+                    (calcPreview?.returnedCount || 0) +
+                    (calcPreview?.pendingCount || 0)}{" "}
+                  parcels
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center text-[11px]">
+                <div className="bg-white/80 p-1.5 rounded-lg border border-emerald-200">
+                  <span className="text-emerald-700 block font-bold">Delivered</span>
+                  <span className="text-emerald-950 font-extrabold text-xs">
+                    {calcPreview?.deliveredCount || 0}
+                  </span>
+                </div>
+                <div className="bg-white/80 p-1.5 rounded-lg border border-rose-200">
+                  <span className="text-rose-700 block font-bold">Returned</span>
+                  <span className="text-rose-950 font-extrabold text-xs">
+                    {calcPreview?.returnedCount || 0}
+                  </span>
+                </div>
+                <div className="bg-white/80 p-1.5 rounded-lg border border-amber-200">
+                  <span className="text-amber-700 block font-bold">Pending</span>
+                  <span className="text-amber-950 font-extrabold text-xs">
+                    {calcPreview?.pendingCount || 0}
+                  </span>
+                </div>
+              </div>
+              {calcPreview?.returnReasonsSummary && Object.keys(calcPreview.returnReasonsSummary).length > 0 && (
+                <div className="pt-1.5 border-t border-blue-200/60 text-[10px] text-slate-600">
+                  <span className="font-bold text-rose-800">Return Reasons breakdown: </span>
+                  {Object.entries(calcPreview.returnReasonsSummary)
+                    .map(([r, c]) => `${r} (${c})`)
+                    .join(", ")}
+                </div>
+              )}
             </div>
 
             {/* Gross COD */}

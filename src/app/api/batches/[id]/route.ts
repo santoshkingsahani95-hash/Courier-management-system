@@ -31,15 +31,23 @@ export async function GET(
     const returnedCount = batchParcels.filter((p) => p.status === "Returned").length;
     const pendingCount = batchParcels.filter((p) => p.status === "Pending").length;
     const totalCOD = batchParcels.reduce((sum, p) => sum + (p.codAmount || 0), 0);
+    const settledCount = batchParcels.filter((p) => p.settlementStatus === "Settled").length;
+    let settlementStatus: "Settled" | "Partially Settled" | "Unsettled" = "Unsettled";
+    if (batchParcels.length > 0 && settledCount === batchParcels.length) {
+      settlementStatus = "Settled";
+    } else if (settledCount > 0) {
+      settlementStatus = "Partially Settled";
+    }
 
     const result = {
       batch: {
         ...batch,
-        totalPackages: batchParcels.length,
-        totalCOD,
+        totalPackages: batchParcels.length > 0 ? batchParcels.length : (batch.totalPackages || 0),
+        totalCOD: batchParcels.length > 0 ? totalCOD : (batch.totalCOD || 0),
         deliveredCount,
         returnedCount,
         pendingCount,
+        settlementStatus,
       },
       parcels: batchParcels,
     };

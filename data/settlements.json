@@ -1,1 +1,36 @@
-[]
+[
+  {
+    "_id": "stl-test-001",
+    "settlementNumber": "STL-20261104-001",
+    "courierId": "c-001",
+    "courierName": "Google Express",
+    "settlementDate": "2026-11-04",
+    "totalParcelsCount": 20,
+    "deliveredParcelsCount": 15,
+    "returnedParcelsCount": 2,
+    "pendingParcelsCount": 3,
+    "totalCODAmount": 30000,
+    "deliveryCharges": 1050,
+    "returnCharges": 0,
+    "netPayableAmount": 28950,
+    "status": "Settled",
+    "parcelIds": [
+      "pcl-test-003",
+      "pcl-test-004",
+      "pcl-test-005",
+      "pcl-test-006",
+      "pcl-test-007",
+      "pcl-test-008",
+      "pcl-test-009",
+      "pcl-test-010",
+      "pcl-test-011",
+      "pcl-test-012",
+      "pcl-test-013",
+      "pcl-test-014",
+      "pcl-test-015",
+      "pcl-test-016",
+      "pcl-test-017"
+    ],
+    "createdAt": "2026-11-04T09:50:17.753Z"
+  }
+]

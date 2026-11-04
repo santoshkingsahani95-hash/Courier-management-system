@@ -29,6 +29,8 @@ export interface ICourier {
   updatedAt?: string;
 }
 
+export type BatchSettlementStatus = "Unsettled" | "Partially Settled" | "Settled";
+
 export interface IBatch {
   _id: string;
   batchNumber: string;
@@ -37,6 +39,10 @@ export interface IBatch {
   batchDate: string;
   totalPackages: number;
   totalCOD: number;
+  deliveredCount?: number;
+  returnedCount?: number;
+  pendingCount?: number;
+  settlementStatus?: BatchSettlementStatus;
   notes?: string;
   createdBy: string;
   createdAt: string;
@@ -45,6 +51,27 @@ export interface IBatch {
 
 export type ParcelStatus = "Pending" | "Delivered" | "Returned" | "Cancelled";
 export type SettlementStatus = "Unsettled" | "Settled";
+
+export interface IReturnRecord {
+  _id: string;
+  parcelId: string;
+  batchId: string;
+  batchNumber?: string;
+  courierId: string;
+  courierName?: string;
+  customerName: string;
+  mobile: string;
+  trackingId?: string;
+  sku?: string;
+  codAmount: number;
+  returnDate: string;
+  returnReason: string;
+  customReason?: string;
+  returnStatus: "Returned" | "Reverted";
+  recordedBy: string;
+  createdAt: string;
+  updatedAt?: string;
+}
 
 export interface IParcel {
   _id: string;
@@ -63,6 +90,10 @@ export interface IParcel {
   status: ParcelStatus;
   deliveryDate?: string;
   returnDate?: string;
+  returnReason?: string;
+  customReason?: string;
+  returnedBy?: string;
+  returnRecordId?: string;
   actualDeliveryCharge?: number;
   actualReturnCharge?: number;
   settlementId?: string;
@@ -84,6 +115,8 @@ export interface ISettlement {
   toDate: string;
   deliveredParcelsCount: number;
   returnedParcelsCount: number;
+  pendingParcelsCount?: number;
+  totalParcelsCount?: number;
   grossCOD: number;
   deliveryCharges: number;
   returnCharges: number;

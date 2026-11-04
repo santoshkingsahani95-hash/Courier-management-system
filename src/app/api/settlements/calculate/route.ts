@@ -64,12 +64,21 @@ export async function POST(request: Request) {
 
     const totalReceivable = currentNetReceivable + previousDue;
 
+    // Collect distinct return reasons for returned parcels
+    const returnReasonsSummary: { [reason: string]: number } = {};
+    for (const rp of returnedParcels) {
+      const reason = rp.returnReason || rp.remarks || "Customer Refused";
+      returnReasonsSummary[reason] = (returnReasonsSummary[reason] || 0) + 1;
+    }
+
     return NextResponse.json({
       courier,
+      totalHandedOver: eligibleParcels.length,
       eligibleParcelsCount: eligibleParcels.length,
       deliveredCount: deliveredParcels.length,
       returnedCount: returnedParcels.length,
       pendingCount: pendingParcels.length,
+      returnReasonsSummary,
       grossCOD,
       deliveryCharges,
       returnCharges: 0,

@@ -5,27 +5,7 @@ import { getCurrentUser } from "@/lib/auth";
 export async function GET() {
   try {
     const batches = await getBatches();
-    const parcels = await getParcels();
-
-    // Attach real counts from parcels to each batch
-    const enriched = batches.map((b) => {
-      const bParcels = parcels.filter((p) => p.batchId === b._id || p.batchNumber === b.batchNumber);
-      const deliveredCount = bParcels.filter((p) => p.status === "Delivered").length;
-      const returnedCount = bParcels.filter((p) => p.status === "Returned").length;
-      const pendingCount = bParcels.filter((p) => p.status === "Pending").length;
-      const totalCOD = bParcels.reduce((sum, p) => sum + (p.codAmount || 0), 0);
-
-      return {
-        ...b,
-        totalPackages: bParcels.length > 0 ? bParcels.length : b.totalPackages,
-        totalCOD: bParcels.length > 0 ? totalCOD : b.totalCOD,
-        deliveredCount,
-        returnedCount,
-        pendingCount,
-      };
-    });
-
-    return NextResponse.json({ batches: enriched });
+    return NextResponse.json({ batches });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

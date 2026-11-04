@@ -1,0 +1,1027 @@
+"use client";
+
+import { useState, useEffect, useMemo } from "react";
+import {
+  RotateCcw,
+  Truck,
+  Search,
+  CheckCircle2,
+  FileSpreadsheet,
+  Printer,
+  Loader2,
+  CheckSquare,
+  Square,
+  Plus,
+  X,
+  Undo2,
+  ChevronDown,
+  Trash2,
+  Calendar,
+  AlertCircle,
+} from "lucide-react";
+import { formatNPR, formatDate } from "@/lib/utils";
+
+const DEFAULT_COURIER_LIST = [
+  { _id: "c-001", name: "Google Express", serviceArea: "Inside Valley", defaultDeliveryCharge: 70 },
+  { _id: "c-002", name: "KDM Express", serviceArea: "Inside Valley", defaultDeliveryCharge: 150 },
+  { _id: "c-003", name: "SP Express", serviceArea: "Inside Valley", defaultDeliveryCharge: 150 },
+  { _id: "c-004", name: "Nepal Can Move", serviceArea: "Outside Valley", defaultDeliveryCharge: 250 },
+];
+
+interface ReturnModalRow {
+  id: string;
+  customerName: string;
+  mobile: string;
+  sku: string;
+  codAmount: number | "";
+  remarks: string;
+}
+
+export default function ReturnsPage() {
+  const [couriers, setCouriers] = useState<any[]>(DEFAULT_COURIER_LIST);
+  const [selectedCourierId, setSelectedCourierId] = useState<string>("c-001");
+  const [loadingData, setLoadingData] = useState(true);
+
+  // Return inward data
+  const [returnsList, setReturnsList] = useState<any[]>([]);
+  const [pendingParcels, setPendingParcels] = useState<any[]>([]);
+  const [summary, setSummary] = useState({
+    totalReturnedCount: 0,
+    totalReturnedCOD: 0,
+    todayReturnsCount: 0,
+    todayReturnedCOD: 0,
+  });
+
+  // Search & Selection for pending parcels
+  const [pendingSearch, setPendingSearch] = useState("");
+  const [selectedPendingIds, setSelectedPendingIds] = useState<string[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [successToast, setSuccessToast] = useState<string | null>(null);
+
+  // Quick inline return toggle & form
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [inlineName, setInlineName] = useState("");
+  const [inlineMobile, setInlineMobile] = useState("");
+  const [inlineCOD, setInlineCOD] = useState<number | "">("");
+  const [inlineSKU, setInlineSKU] = useState("");
+
+  // Comprehensive "Add Returns Entry" Modal Dialog
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [modalCourierId, setModalCourierId] = useState("c-001");
+  const [modalDate, setModalDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [modalReason, setModalReason] = useState("Customer Refused");
+  const [modalRows, setModalRows] = useState<ReturnModalRow[]>([
+    { id: "row-1", customerName: "", mobile: "", sku: "", codAmount: "", remarks: "" },
+  ]);
+
+  // History filtering
+  const [dateFilter, setDateFilter] = useState<"all" | "today" | "yesterday" | "last7days" | "custom">("all");
+  const [customFromDate, setCustomFromDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [customToDate, setCustomToDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [historySearch, setHistorySearch] = useState("");
+  const [historyCourierId, setHistoryCourierId] = useState("all");
+
+  useEffect(() => {
+    fetchCouriers();
+    fetchReturns();
+  }, []);
+
+  useEffect(() => {
+    fetchReturns();
+    setSelectedPendingIds([]);
+  }, [selectedCourierId]);
+
+  async function fetchCouriers() {
+    try {
+      const res = await fetch("/api/couriers");
+      const d = await res.json();
+      const list = d.couriers || [];
+      if (list.length > 0) {
+        setCouriers(list);
+        if (!selectedCourierId) {
+          setSelectedCourierId(list[0]._id);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function fetchReturns() {
+    setLoadingData(true);
+    try {
+      let url = `/api/returns`;
+      if (selectedCourierId) {
+        url += `?courierId=${encodeURIComponent(selectedCourierId)}`;
+      }
+      const res = await fetch(url);
+      const d = await res.json();
+      setReturnsList(d.returns || []);
+      setPendingParcels(d.pendingParcels || []);
+      if (d.summary) {
+        setSummary(d.summary);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingData(false);
+    }
+  }
+
+  function showMessage(msg: string) {
+    setSuccessToast(msg);
+    setTimeout(() => setSuccessToast(null), 4000);
+  }
+
+  // Mark single parcel as returned
+  async function handleMarkSingleReturned(parcel: any) {
+    setIsProcessing(true);
+    try {
+      const res = await fetch("/api/returns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          courierId: selectedCourierId,
+          parcelIds: [parcel._id],
+          returnReason: "Customer Refused",
+        }),
+      });
+
+      const d = await res.json();
+      if (res.ok) {
+        showMessage(`✓ Returned "${parcel.customerName}". Deducted ${formatNPR(parcel.codAmount)}.`);
+        fetchReturns();
+      } else {
+        alert(d.error || "Failed to mark return");
+      }
+    } catch (e: any) {
+      alert(e.message || "An error occurred");
+    } finally {
+      setIsProcessing(false);
+    }
+  }
+
+  // Mark multiple selected parcels as returned
+  async function handleMarkBulkReturned() {
+    if (selectedPendingIds.length === 0) return;
+    const selectedItems = pendingParcels.filter((p) => selectedPendingIds.includes(p._id));
+    const totalCOD = selectedItems.reduce((sum, p) => sum + (p.codAmount || 0), 0);
+
+    setIsProcessing(true);
+    try {
+      const res = await fetch("/api/returns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          courierId: selectedCourierId,
+          parcelIds: selectedPendingIds,
+          returnReason: "Customer Refused",
+        }),
+      });
+
+      const d = await res.json();
+      if (res.ok) {
+        showMessage(`✓ Processed ${selectedPendingIds.length} returns. Total ${formatNPR(totalCOD)} deducted.`);
+        setSelectedPendingIds([]);
+        fetchReturns();
+      } else {
+        alert(d.error || "Failed to process returns");
+      }
+    } catch (e: any) {
+      alert(e.message || "An error occurred");
+    } finally {
+      setIsProcessing(false);
+    }
+  }
+
+  // Quick Inline return save
+  async function handleSaveInlineReturn(e: React.FormEvent) {
+    e.preventDefault();
+    if (!inlineName.trim() || inlineCOD === "") {
+      alert("Please enter customer name and COD amount.");
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const res = await fetch("/api/returns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          courierId: selectedCourierId,
+          customerName: inlineName.trim(),
+          mobile: inlineMobile.trim(),
+          sku: inlineSKU.trim(),
+          codAmount: Number(inlineCOD) || 0,
+          returnReason: "Customer Refused",
+        }),
+      });
+
+      const d = await res.json();
+      if (res.ok) {
+        showMessage(`✓ Added return for "${inlineName}". Deducted ${formatNPR(Number(inlineCOD))}.`);
+        setInlineName("");
+        setInlineMobile("");
+        setInlineCOD("");
+        setInlineSKU("");
+        setShowQuickAdd(false);
+        fetchReturns();
+      } else {
+        alert(d.error || "Failed to save return");
+      }
+    } catch (e: any) {
+      alert(e.message || "An error occurred");
+    } finally {
+      setIsProcessing(false);
+    }
+  }
+
+  // Handle Modal Rows operations
+  function handleAddModalRow() {
+    setModalRows((prev) => [
+      ...prev,
+      {
+        id: "row-" + Date.now() + "-" + Math.random().toString(36).substring(2, 5),
+        customerName: "",
+        mobile: "",
+        sku: "",
+        codAmount: "",
+        remarks: "",
+      },
+    ]);
+  }
+
+  function handleRemoveModalRow(index: number) {
+    if (modalRows.length <= 1) {
+      setModalRows([{ id: "row-1", customerName: "", mobile: "", sku: "", codAmount: "", remarks: "" }]);
+      return;
+    }
+    setModalRows((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function handleModalRowChange(index: number, field: keyof ReturnModalRow, val: any) {
+    setModalRows((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [field]: val };
+      return copy;
+    });
+  }
+
+  // Submit Modal Return Entries
+  async function handleSubmitModalReturns(e: React.FormEvent) {
+    e.preventDefault();
+
+    const validEntries = modalRows.filter((r) => r.customerName.trim() !== "");
+    if (validEntries.length === 0) {
+      alert("Please enter at least one customer name.");
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const entriesPayload = validEntries.map((r) => ({
+        courierId: modalCourierId,
+        customerName: r.customerName.trim(),
+        mobile: r.mobile.trim(),
+        sku: r.sku.trim(),
+        codAmount: Number(r.codAmount) || 0,
+        remarks: r.remarks.trim(),
+        returnReason: modalReason,
+        returnDate: modalDate,
+      }));
+
+      const res = await fetch("/api/returns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          courierId: modalCourierId,
+          entries: entriesPayload,
+          returnReason: modalReason,
+          returnDate: modalDate,
+        }),
+      });
+
+      const d = await res.json();
+      if (res.ok) {
+        showMessage(`✓ Recorded ${validEntries.length} return entries. COD automatically adjusted!`);
+        setShowAddModal(false);
+        // Reset modal form
+        setModalRows([{ id: "row-1", customerName: "", mobile: "", sku: "", codAmount: "", remarks: "" }]);
+        fetchReturns();
+      } else {
+        alert(d.error || "Failed to record return entries");
+      }
+    } catch (e: any) {
+      alert(e.message || "An error occurred");
+    } finally {
+      setIsProcessing(false);
+    }
+  }
+
+  // Revert return status back to pending
+  async function handleRevert(parcelId: string, customerName: string) {
+    if (!confirm(`Revert return for "${customerName}"? Package will move back to Pending delivery.`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/returns", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ parcelId, newStatus: "Pending" }),
+      });
+
+      if (res.ok) {
+        showMessage(`✓ Reverted return for "${customerName}".`);
+        fetchReturns();
+      } else {
+        const d = await res.json();
+        alert(d.error || "Failed to revert return");
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  // Filter pending parcels
+  const filteredPending = useMemo(() => {
+    if (!pendingSearch.trim()) return pendingParcels;
+    const q = pendingSearch.toLowerCase().trim();
+    return pendingParcels.filter(
+      (p) =>
+        p.customerName?.toLowerCase().includes(q) ||
+        p.mobile?.includes(q) ||
+        (p.sku && p.sku.toLowerCase().includes(q))
+    );
+  }, [pendingParcels, pendingSearch]);
+
+  // Filter returns history
+  const filteredReturns = useMemo(() => {
+    const now = new Date();
+    const todayStr = now.toISOString().split("T")[0];
+    const y = new Date(now);
+    y.setDate(y.getDate() - 1);
+    const yesterdayStr = y.toISOString().split("T")[0];
+    const past7 = new Date(now);
+    past7.setDate(past7.getDate() - 6);
+    const past7Str = past7.toISOString().split("T")[0];
+
+    return returnsList.filter((p) => {
+      if (historyCourierId !== "all" && p.courierId !== historyCourierId) return false;
+
+      const pDate = p.returnDate || (p.updatedAt || p.createdAt || "").split("T")[0];
+      if (dateFilter === "today" && pDate !== todayStr) return false;
+      if (dateFilter === "yesterday" && pDate !== yesterdayStr) return false;
+      if (dateFilter === "last7days" && pDate < past7Str) return false;
+      if (dateFilter === "custom") {
+        if (customFromDate && pDate < customFromDate) return false;
+        if (customToDate && pDate > customToDate) return false;
+      }
+
+      if (historySearch.trim()) {
+        const q = historySearch.toLowerCase().trim();
+        const matchName = (p.customerName || "").toLowerCase().includes(q);
+        const matchMobile = (p.mobile || "").includes(q);
+        const matchSku = (p.sku || "").toLowerCase().includes(q);
+        const matchRemarks = (p.remarks || "").toLowerCase().includes(q);
+        const matchCourier = (p.courierName || "").toLowerCase().includes(q);
+        if (!matchName && !matchMobile && !matchSku && !matchRemarks && !matchCourier) return false;
+      }
+
+      return true;
+    });
+  }, [returnsList, historyCourierId, dateFilter, customFromDate, customToDate, historySearch]);
+
+  const activeCourier = couriers.find((c) => c._id === selectedCourierId);
+  const pendingCODTotal = pendingParcels.reduce((sum, p) => sum + (p.codAmount || 0), 0);
+  const selectedCODTotal = pendingParcels
+    .filter((p) => selectedPendingIds.includes(p._id))
+    .reduce((sum, p) => sum + (p.codAmount || 0), 0);
+
+  const modalTotalCOD = modalRows.reduce((sum, r) => sum + (Number(r.codAmount) || 0), 0);
+  const modalValidCount = modalRows.filter((r) => r.customerName.trim() !== "").length;
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-6 pb-12">
+      {/* Toast Notification */}
+      {successToast && (
+        <div className="fixed top-5 right-5 z-50 bg-emerald-600 text-white px-4 py-2.5 rounded-xl shadow-lg flex items-center space-x-2 text-xs font-semibold animate-in fade-in slide-in-from-top-2">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <span>{successToast}</span>
+        </div>
+      )}
+
+      {/* HEADER: Clean, Minimalist, Action-Oriented */}
+      <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center space-x-2.5">
+            <div className="w-9 h-9 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600">
+              <RotateCcw className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
+                Courier Returns
+              </h1>
+              <p className="text-xs text-slate-500">
+                Record returned parcels to automatically deduct COD from courier settlement.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Compact Summary Pills, Primary Add Returns Button, & Export */}
+        <div className="flex items-center flex-wrap gap-2 text-xs">
+          <div className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-700">
+            Today: <strong className="text-slate-900">{summary.todayReturnsCount}</strong> returns{" "}
+            <span className="text-slate-400">({formatNPR(summary.todayReturnedCOD)})</span>
+          </div>
+          <div className="px-3 py-1.5 bg-rose-50/70 border border-rose-200/80 rounded-xl font-medium text-rose-800">
+            Total Returned: <strong>{summary.totalReturnedCount}</strong>{" "}
+            <span className="text-rose-600 font-bold">({formatNPR(summary.totalReturnedCOD)})</span>
+          </div>
+
+          {/* Primary Action Button */}
+          <button
+            onClick={() => {
+              setModalCourierId(selectedCourierId);
+              setShowAddModal(true);
+            }}
+            className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-xs transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Returns Entry</span>
+          </button>
+
+          <a
+            href="/api/export?type=returns"
+            className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl font-semibold transition-colors"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Excel</span>
+          </a>
+          <button
+            onClick={() => window.print()}
+            className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl font-semibold transition-colors"
+          >
+            <Printer className="w-3.5 h-3.5 text-slate-500" />
+            <span>Print</span>
+          </button>
+        </div>
+      </div>
+
+      {/* SECTION 1: RECEIVE RETURNS WORKBENCH */}
+      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+        {/* Top Control Bar: Pick Courier + Live Search + Add Returns Entry */}
+        <div className="p-4 border-b border-slate-100 bg-slate-50/60 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center space-x-3">
+            <label className="text-xs font-bold text-slate-700 whitespace-nowrap flex items-center space-x-1.5">
+              <Truck className="w-4 h-4 text-blue-600" />
+              <span>Courier:</span>
+            </label>
+            <div className="relative">
+              <select
+                value={selectedCourierId}
+                onChange={(e) => setSelectedCourierId(e.target.value)}
+                className="pl-3 pr-8 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs appearance-none cursor-pointer"
+              >
+                {couriers.map((c) => (
+                  <option key={c._id} value={c._id}>
+                    {c.name} ({c.serviceArea})
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+
+            <span className="text-xs text-slate-500 hidden sm:inline">
+              <strong className="text-blue-700 font-bold">{pendingParcels.length}</strong> pending{" "}
+              <span className="text-slate-400">({formatNPR(pendingCODTotal)})</span>
+            </span>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <div className="relative flex-1 md:w-64">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search customer or mobile..."
+                value={pendingSearch}
+                onChange={(e) => setPendingSearch(e.target.value)}
+                className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
+              />
+            </div>
+
+            <button
+              onClick={() => {
+                setModalCourierId(selectedCourierId);
+                setShowAddModal(true);
+              }}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-all bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Returns Entry</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Bulk Action Bar (when packages are selected) */}
+        {selectedPendingIds.length > 0 && (
+          <div className="px-4 py-2.5 bg-rose-50 border-b border-rose-200 flex items-center justify-between animate-in fade-in text-xs">
+            <span className="font-bold text-rose-900">
+              {selectedPendingIds.length} parcel(s) selected &bull; Total COD to deduct:{" "}
+              <strong className="text-rose-700 font-extrabold">{formatNPR(selectedCODTotal)}</strong>
+            </span>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setSelectedPendingIds([])}
+                className="px-2.5 py-1 text-slate-600 hover:text-slate-900 font-medium"
+              >
+                Clear
+              </button>
+              <button
+                onClick={handleMarkBulkReturned}
+                disabled={isProcessing}
+                className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white rounded-lg font-bold text-xs flex items-center space-x-1.5 transition-colors"
+              >
+                {isProcessing && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                <span>Return Selected ({selectedPendingIds.length})</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Pending Dispatched Checklist */}
+        <div className="overflow-x-auto max-h-72 overflow-y-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-50/80 sticky top-0 border-b border-slate-200 text-slate-600 font-semibold text-[11px] uppercase tracking-wider">
+              <tr>
+                <th className="py-2.5 px-3 w-8">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedPendingIds.length === filteredPending.length && filteredPending.length > 0) {
+                        setSelectedPendingIds([]);
+                      } else {
+                        setSelectedPendingIds(filteredPending.map((p) => p._id));
+                      }
+                    }}
+                    className="text-slate-400 hover:text-slate-600 flex items-center"
+                  >
+                    {selectedPendingIds.length > 0 && selectedPendingIds.length === filteredPending.length ? (
+                      <CheckSquare className="w-4 h-4 text-rose-600" />
+                    ) : (
+                      <Square className="w-4 h-4" />
+                    )}
+                  </button>
+                </th>
+                <th className="py-2.5 px-3">Customer Name</th>
+                <th className="py-2.5 px-3">Mobile</th>
+                <th className="py-2.5 px-3">SKU</th>
+                <th className="py-2.5 px-3 text-right">COD Amount</th>
+                <th className="py-2.5 px-4 text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredPending.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-slate-400 text-xs">
+                    {pendingParcels.length === 0
+                      ? `No pending packages out for delivery with ${activeCourier?.name || "this courier"}.`
+                      : `No pending packages matching "${pendingSearch}".`}
+                  </td>
+                </tr>
+              ) : (
+                filteredPending.map((p) => {
+                  const isChecked = selectedPendingIds.includes(p._id);
+                  return (
+                    <tr
+                      key={p._id}
+                      className={`hover:bg-slate-50/90 transition-colors ${
+                        isChecked ? "bg-rose-50/40" : ""
+                      }`}
+                    >
+                      <td className="py-2 px-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedPendingIds((prev) =>
+                              prev.includes(p._id) ? prev.filter((id) => id !== p._id) : [...prev, p._id]
+                            );
+                          }}
+                          className="text-slate-400 hover:text-slate-600 flex items-center"
+                        >
+                          {isChecked ? (
+                            <CheckSquare className="w-4 h-4 text-rose-600" />
+                          ) : (
+                            <Square className="w-4 h-4" />
+                          )}
+                        </button>
+                      </td>
+                      <td className="py-2 px-3 font-bold text-slate-900">{p.customerName}</td>
+                      <td className="py-2 px-3 font-mono text-slate-600">{p.mobile || "-"}</td>
+                      <td className="py-2 px-3 font-mono text-slate-500 text-[11px]">{p.sku || "-"}</td>
+                      <td className="py-2 px-3 text-right font-black text-slate-900">
+                        {formatNPR(p.codAmount)}
+                      </td>
+                      <td className="py-2 px-4 text-center">
+                        <button
+                          onClick={() => handleMarkSingleReturned(p)}
+                          disabled={isProcessing}
+                          className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-lg text-[11px] transition-colors"
+                        >
+                          Mark Returned
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* SECTION 2: RETURNED PARCELS HISTORY LOG */}
+      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+        {/* Header & Quick Date Filters */}
+        <div className="p-4 border-b border-slate-200/80 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <h2 className="font-bold text-slate-900 text-sm">Returned Parcels Log</h2>
+            <p className="text-xs text-slate-500">
+              History of returned parcels with auto-adjusted COD amounts
+            </p>
+          </div>
+
+          {/* Quick Date Filters */}
+          <div className="flex flex-wrap items-center gap-1 text-xs">
+            {[
+              { id: "all", label: "All Returns" },
+              { id: "today", label: "Today" },
+              { id: "yesterday", label: "Yesterday" },
+              { id: "last7days", label: "Last 7 Days" },
+              { id: "custom", label: "Custom Date" },
+            ].map((d) => (
+              <button
+                key={d.id}
+                onClick={() => setDateFilter(d.id as any)}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                  dateFilter === d.id
+                    ? "bg-rose-600 text-white shadow-2xs"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                }`}
+              >
+                {d.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Toolbar: Search + Courier Filter */}
+        <div className="p-3 bg-slate-50/60 border-b border-slate-100 flex flex-col md:flex-row gap-2.5 text-xs">
+          <div className="relative flex-1">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search by customer name, mobile, SKU, or remarks..."
+              value={historySearch}
+              onChange={(e) => setHistorySearch(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
+            />
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <select
+              value={historyCourierId}
+              onChange={(e) => setHistoryCourierId(e.target.value)}
+              className="px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 shadow-2xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All Couriers</option>
+              {couriers.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+
+            {dateFilter === "custom" && (
+              <div className="flex items-center space-x-1.5">
+                <input
+                  type="date"
+                  value={customFromDate}
+                  onChange={(e) => setCustomFromDate(e.target.value)}
+                  className="px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs"
+                />
+                <span className="text-slate-400">to</span>
+                <input
+                  type="date"
+                  value={customToDate}
+                  onChange={(e) => setCustomToDate(e.target.value)}
+                  className="px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* History Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-600 font-semibold text-[11px] uppercase tracking-wider">
+              <tr>
+                <th className="py-2.5 px-4">Date</th>
+                <th className="py-2.5 px-4">Customer</th>
+                <th className="py-2.5 px-4">Courier Partner</th>
+                <th className="py-2.5 px-4">SKU</th>
+                <th className="py-2.5 px-4 text-right">Deducted COD</th>
+                <th className="py-2.5 px-4">Remarks</th>
+                <th className="py-2.5 px-4 text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {loadingData ? (
+                <tr>
+                  <td colSpan={7} className="py-10 text-center text-slate-400">
+                    <Loader2 className="w-5 h-5 animate-spin mx-auto mb-1.5 text-rose-600" />
+                    <span>Loading returned parcels...</span>
+                  </td>
+                </tr>
+              ) : filteredReturns.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-10 text-center text-slate-400">
+                    No returned parcel records found.
+                  </td>
+                </tr>
+              ) : (
+                filteredReturns.map((p) => (
+                  <tr key={p._id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-2.5 px-4 font-mono font-medium text-slate-700 whitespace-nowrap">
+                      {formatDate(p.returnDate || p.updatedAt || p.createdAt)}
+                    </td>
+                    <td className="py-2.5 px-4">
+                      <div className="font-bold text-slate-900">{p.customerName}</div>
+                      {p.mobile && <div className="text-[11px] font-mono text-slate-500">{p.mobile}</div>}
+                    </td>
+                    <td className="py-2.5 px-4 font-medium text-slate-700">{p.courierName}</td>
+                    <td className="py-2.5 px-4 font-mono text-slate-500 text-[11px]">{p.sku || "-"}</td>
+                    <td className="py-2.5 px-4 text-right font-black text-rose-700 whitespace-nowrap">
+                      - {formatNPR(p.codAmount)}
+                    </td>
+                    <td className="py-2.5 px-4 text-slate-600 text-xs max-w-xs truncate">
+                      {p.remarks || "Customer Refused"}
+                    </td>
+                    <td className="py-2.5 px-4 text-center">
+                      <button
+                        onClick={() => handleRevert(p._id, p.customerName)}
+                        className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-[11px] font-semibold transition-colors inline-flex items-center space-x-1"
+                        title="Revert back to Pending"
+                      >
+                        <Undo2 className="w-3 h-3 text-slate-500" />
+                        <span>Revert</span>
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Clean Footer Summary */}
+        <div className="p-3 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-2">
+          <div>
+            Showing {filteredReturns.length} of {returnsList.length} returned parcels
+          </div>
+          <div>
+            Total Deducted COD in view:{" "}
+            <strong className="text-rose-700 font-black">
+              {formatNPR(filteredReturns.reduce((sum, p) => sum + (p.codAmount || 0), 0))}
+            </strong>
+          </div>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* ADD RETURNS ENTRY MODAL (Clean, Fast & Multi-row Capable)                 */}
+      {/* ========================================================================= */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-3xl w-full overflow-hidden my-8 animate-in zoom-in-95">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-9 h-9 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600">
+                  <RotateCcw className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-900 text-base">Add Returns Entry</h3>
+                  <p className="text-xs text-slate-500">
+                    Record returned parcels from courier to automatically deduct COD from settlement.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                className="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body Form */}
+            <form onSubmit={handleSubmitModalReturns} className="p-5 space-y-5">
+              {/* Top Configuration: Courier + Date + Reason */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 text-xs">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Courier Partner <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={modalCourierId}
+                    onChange={(e) => setModalCourierId(e.target.value)}
+                    className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                  >
+                    {couriers.map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {c.name} ({c.serviceArea})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Return Date</label>
+                  <input
+                    type="date"
+                    value={modalDate}
+                    onChange={(e) => setModalDate(e.target.value)}
+                    className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-800"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Default Reason</label>
+                  <select
+                    value={modalReason}
+                    onChange={(e) => setModalReason(e.target.value)}
+                    className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg font-medium text-slate-800"
+                  >
+                    <option value="Customer Refused">Customer Refused at Doorstep</option>
+                    <option value="Phone Switched Off">Phone Switched Off / Unreachable</option>
+                    <option value="Door Locked">Door Locked / Rescheduled Failed</option>
+                    <option value="Wrong Item / Size Issue">Wrong Item / Size Issue</option>
+                    <option value="Order Cancelled">Order Cancelled by Customer</option>
+                    <option value="Address Incomplete">Address Incomplete / Out of Area</option>
+                    <option value="Damaged in Transit">Damaged in Transit</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Rows List */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Returned Parcels Information
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAddModalRow}
+                    className="text-xs font-bold text-rose-600 hover:text-rose-700 flex items-center space-x-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Another Parcel</span>
+                  </button>
+                </div>
+
+                <div className="border border-slate-200 rounded-xl overflow-hidden max-h-64 overflow-y-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-100 text-slate-600 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
+                      <tr>
+                        <th className="py-2 px-3 w-8">#</th>
+                        <th className="py-2 px-3">Customer Name *</th>
+                        <th className="py-2 px-3">Mobile Number</th>
+                        <th className="py-2 px-3">SKU (Opt.)</th>
+                        <th className="py-2 px-3 w-32">COD Amount (Rs.) *</th>
+                        <th className="py-2 px-3">Notes / Remarks</th>
+                        <th className="py-2 px-2 w-8 text-center"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {modalRows.map((row, idx) => (
+                        <tr key={row.id} className="hover:bg-slate-50/60">
+                          <td className="py-2 px-3 text-slate-400 font-mono text-[11px]">{idx + 1}</td>
+                          <td className="py-2 px-3">
+                            <input
+                              type="text"
+                              required
+                              placeholder="e.g. Maya Shrestha"
+                              value={row.customerName}
+                              onChange={(e) => handleModalRowChange(idx, "customerName", e.target.value)}
+                              className="w-full px-2.5 py-1 bg-white border border-slate-300 rounded text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-rose-500"
+                            />
+                          </td>
+                          <td className="py-2 px-3">
+                            <input
+                              type="text"
+                              placeholder="98XXXXXXXX"
+                              value={row.mobile}
+                              onChange={(e) => handleModalRowChange(idx, "mobile", e.target.value)}
+                              className="w-full px-2.5 py-1 bg-white border border-slate-300 rounded text-xs font-mono"
+                            />
+                          </td>
+                          <td className="py-2 px-3">
+                            <input
+                              type="text"
+                              placeholder="e.g. HD-BLK-M"
+                              value={row.sku}
+                              onChange={(e) => handleModalRowChange(idx, "sku", e.target.value)}
+                              className="w-full px-2.5 py-1 bg-white border border-slate-300 rounded text-xs font-mono"
+                            />
+                          </td>
+                          <td className="py-2 px-3">
+                            <input
+                              type="number"
+                              required
+                              placeholder="e.g. 2500"
+                              value={row.codAmount}
+                              onChange={(e) =>
+                                handleModalRowChange(
+                                  idx,
+                                  "codAmount",
+                                  e.target.value === "" ? "" : Number(e.target.value)
+                                )
+                              }
+                              className="w-full px-2.5 py-1 bg-white border border-slate-300 rounded text-xs font-black text-rose-700"
+                            />
+                          </td>
+                          <td className="py-2 px-3">
+                            <input
+                              type="text"
+                              placeholder="e.g. refused by customer"
+                              value={row.remarks}
+                              onChange={(e) => handleModalRowChange(idx, "remarks", e.target.value)}
+                              className="w-full px-2.5 py-1 bg-white border border-slate-300 rounded text-xs text-slate-600"
+                            />
+                          </td>
+                          <td className="py-2 px-2 text-center">
+                            {modalRows.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveModalRow(idx)}
+                                className="text-slate-400 hover:text-rose-600 transition-colors p-1"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Modal Footer & Financial Summary */}
+              <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                <div className="flex items-center space-x-2 text-slate-700">
+                  <span className="font-medium">
+                    Valid entries: <strong className="text-slate-900">{modalValidCount}</strong>
+                  </span>
+                  <span className="text-slate-300">&bull;</span>
+                  <span>
+                    Total COD Deducted:{" "}
+                    <strong className="text-rose-700 font-black text-sm">{formatNPR(modalTotalCOD)}</strong>
+                  </span>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isProcessing}
+                    className="px-5 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white rounded-xl font-bold shadow-xs flex items-center space-x-1.5 transition-colors"
+                  >
+                    {isProcessing ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <RotateCcw className="w-4 h-4" />
+                    )}
+                    <span>Save Returns Entry</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,60 @@
+[
+  {
+    "_id": "c-001",
+    "name": "Google Express",
+    "serviceArea": "Inside Valley",
+    "contactPerson": "Ramesh Sharma",
+    "phone": "9801122334",
+    "defaultDeliveryCharge": 70,
+    "defaultReturnCharge": 0,
+    "status": "active",
+    "notes": "Inside Kathmandu valley deliveries. Daily 3 PM pickup.",
+    "createdAt": "2026-10-01T08:00:00.000Z",
+    "updatedAt": "2026-11-03T11:27:25.690Z",
+    "currentDue": 3000,
+    "totalParcels": 4,
+    "deliveredCount": 3,
+    "returnedCount": 1,
+    "pendingCount": 0,
+    "totalCOD": 11600
+  },
+  {
+    "_id": "c-002",
+    "name": "KDM Express",
+    "serviceArea": "Inside Valley",
+    "contactPerson": "Sita Thapa",
+    "phone": "9811223344",
+    "defaultDeliveryCharge": 150,
+    "defaultReturnCharge": 0,
+    "status": "active",
+    "notes": "Ring road & sub-valley coverage (Bhaktapur, Lalitpur).",
+    "createdAt": "2026-10-01T08:00:00.000Z",
+    "updatedAt": "2026-11-03T07:29:46.015Z"
+  },
+  {
+    "_id": "c-003",
+    "name": "SP Express",
+    "serviceArea": "Inside Valley",
+    "contactPerson": "Bikash Shrestha",
+    "phone": "9821223344",
+    "defaultDeliveryCharge": 150,
+    "defaultReturnCharge": 0,
+    "status": "active",
+    "notes": "Express inner city small parcel deliveries.",
+    "createdAt": "2026-10-01T08:00:00.000Z",
+    "updatedAt": "2026-11-03T07:32:21.047Z"
+  },
+  {
+    "_id": "c-004",
+    "name": "Nepal Can Move",
+    "serviceArea": "Outside Valley",
+    "contactPerson": "Sunil KC",
+    "phone": "9841223344",
+    "defaultDeliveryCharge": 250,
+    "defaultReturnCharge": 0,
+    "status": "active",
+    "notes": "All major districts outside Kathmandu valley (Pokhara, Biratnagar, Narayangarh).",
+    "createdAt": "2026-10-01T08:00:00.000Z",
+    "updatedAt": "2026-11-03T07:33:54.068Z"
+  }
+]

@@ -1,0 +1,32 @@
+[
+  {
+    "_id": "u-001",
+    "name": "Santosh Sahani (Admin)",
+    "email": "santoshkingsahani95@gmail.com",
+    "passwordHash": "$2a$10$/UEXXDUi9jvk.TwExboqfeQVVGtwkGBdRXwEeXlkMPvlm2FrB6gs6",
+    "role": "admin",
+    "status": "active",
+    "createdAt": "2026-10-01T08:00:00.000Z",
+    "updatedAt": "2026-11-04T08:15:00.000Z"
+  },
+  {
+    "_id": "u-002",
+    "name": "Pooja Gurung (Manager)",
+    "email": "manager@courier.com",
+    "passwordHash": "$2a$10$fXk0YI.M0YhakHtIwb5wmOkXkacJXMRIy5VWntNqnc2kyE2GKbaxG",
+    "role": "manager",
+    "status": "active",
+    "createdAt": "2026-10-01T08:00:00.000Z",
+    "updatedAt": "2026-10-01T08:00:00.000Z"
+  },
+  {
+    "_id": "u-003",
+    "name": "Amit Rai (Staff)",
+    "email": "staff@courier.com",
+    "passwordHash": "$2a$10$7FZWGbvWHvjIBY1bhOxIDeESuUkXx75lU8ir2ADqXmk5.fF3VmTSm",
+    "role": "staff",
+    "status": "active",
+    "createdAt": "2026-10-01T08:00:00.000Z",
+    "updatedAt": "2026-10-01T08:00:00.000Z"
+  }
+]

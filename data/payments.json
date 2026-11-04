@@ -1,0 +1,144 @@
+[
+  {
+    "_id": "pay-1793704169775",
+    "settlementId": "",
+    "settlementNumber": "Unallocated Credit",
+    "allocationMethod": "unallocated_credit",
+    "allocations": [],
+    "unallocatedAmount": 5000,
+    "courierId": "c-002",
+    "courierName": "KDM Express",
+    "paymentDate": "2026-11-03",
+    "amount": 5000,
+    "paymentMethod": "eSewa",
+    "referenceNumber": "ESEWA-KDM-001",
+    "remarks": "Payment from KDM Express",
+    "recordedBy": "Admin",
+    "createdAt": "2026-11-03T11:09:29.774Z"
+  },
+  {
+    "_id": "pay-1793704147994",
+    "settlementId": "s-multi-01",
+    "settlementNumber": "SET-MULTI-001, SET-MULTI-002",
+    "allocationMethod": "auto_oldest",
+    "allocations": [
+      {
+        "settlementId": "s-multi-01",
+        "settlementNumber": "SET-MULTI-001",
+        "allocatedAmount": 4000
+      },
+      {
+        "settlementId": "s-multi-02",
+        "settlementNumber": "SET-MULTI-002",
+        "allocatedAmount": 3000
+      }
+    ],
+    "unallocatedAmount": 0,
+    "courierId": "c-001",
+    "courierName": "Google Express",
+    "paymentDate": "2026-11-07",
+    "amount": 7000,
+    "paymentMethod": "Bank Transfer",
+    "referenceNumber": "TRX-NABIL-MULTI",
+    "remarks": "Scenario 4 payment spanning two settlements",
+    "recordedBy": "Admin",
+    "createdAt": "2026-11-03T11:09:03.967Z"
+  },
+  {
+    "_id": "pay-1793704084884",
+    "settlementId": "s-1793700144071",
+    "settlementNumber": "SET-20261103-002",
+    "allocationMethod": "auto_oldest",
+    "allocations": [
+      {
+        "settlementId": "s-1793700144071",
+        "settlementNumber": "SET-20261103-002",
+        "allocatedAmount": 5800
+      }
+    ],
+    "unallocatedAmount": 0,
+    "courierId": "c-001",
+    "courierName": "Google Express",
+    "paymentDate": "2026-11-03",
+    "amount": 5800,
+    "paymentMethod": "Bank Transfer",
+    "referenceNumber": "TRX-NABIL-003",
+    "remarks": "Scenario 3 Payment of 5800",
+    "recordedBy": "Admin",
+    "createdAt": "2026-11-03T11:08:02.878Z"
+  },
+  {
+    "_id": "pay-1793704064560",
+    "settlementId": "s-001",
+    "settlementNumber": "SET-20261031-001",
+    "allocationMethod": "auto_oldest",
+    "allocations": [
+      {
+        "settlementId": "s-001",
+        "settlementNumber": "SET-20261031-001",
+        "allocatedAmount": 5000
+      }
+    ],
+    "unallocatedAmount": 0,
+    "courierId": "c-001",
+    "courierName": "Google Express",
+    "paymentDate": "2026-11-03",
+    "amount": 5000,
+    "paymentMethod": "Bank Transfer",
+    "referenceNumber": "TRX-NABIL-002",
+    "remarks": "Scenario 2 Payment of 5000",
+    "recordedBy": "Admin",
+    "createdAt": "2026-11-03T11:07:42.548Z"
+  },
+  {
+    "_id": "pay-1793704046051",
+    "settlementId": "s-001",
+    "settlementNumber": "SET-20261031-001",
+    "allocationMethod": "auto_oldest",
+    "allocations": [
+      {
+        "settlementId": "s-001",
+        "settlementNumber": "SET-20261031-001",
+        "allocatedAmount": 20000
+      }
+    ],
+    "unallocatedAmount": 0,
+    "courierId": "c-001",
+    "courierName": "Google Express",
+    "paymentDate": "2026-11-03",
+    "amount": 20000,
+    "paymentMethod": "Bank Transfer",
+    "referenceNumber": "TRX-NABIL-001",
+    "remarks": "Scenario 1 Payment of 20000",
+    "recordedBy": "Admin",
+    "createdAt": "2026-11-03T11:07:24.041Z"
+  },
+  {
+    "_id": "pay-1793697220512",
+    "settlementId": "",
+    "settlementNumber": "",
+    "courierId": "c-003",
+    "courierName": "SP Express",
+    "paymentDate": "2026-11-03",
+    "amount": 54999,
+    "paymentMethod": "Bank Transfer",
+    "referenceNumber": "",
+    "remarks": "",
+    "recordedBy": "Santosh Mukhiya (Admin)",
+    "createdAt": "2026-11-03T09:13:40.512Z"
+  },
+  {
+    "_id": "pay-001",
+    "settlementId": "s-001",
+    "settlementNumber": "SET-20261031-001",
+    "courierId": "c-001",
+    "courierName": "Courier 1 — Inside Valley (Pathao)",
+    "paymentDate": "2026-11-01",
+    "amount": 80000,
+    "paymentMethod": "Bank Transfer",
+    "referenceNumber": "NABIL-TRX-998822",
+    "remarks": "Partial transfer into Nabil Bank current account",
+    "recordedBy": "Santosh Mukhiya (Admin)",
+    "createdAt": "2026-11-01T10:00:00.000Z"
+  }
+]

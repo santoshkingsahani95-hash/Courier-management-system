@@ -1,0 +1,631 @@
+[
+  {
+    "_id": "aud-1793758816592-m4np",
+    "userId": "u-001",
+    "userName": "Santosh Mukhiya (Admin)",
+    "action": "USER_LOGIN",
+    "entityType": "User",
+    "entityId": "u-001",
+    "newValue": {
+      "email": "admin@courier.com",
+      "role": "admin"
+    },
+    "timestamp": "2026-11-04T02:20:14.574Z"
+  },
+  {
+    "_id": "aud-1793757877312-7p84",
+    "userId": "u-001",
+    "userName": "Santosh Mukhiya (Admin)",
+    "action": "USER_LOGIN",
+    "entityType": "User",
+    "entityId": "u-001",
+    "newValue": {
+      "email": "admin@courier.com",
+      "role": "admin"
+    },
+    "timestamp": "2026-11-04T02:04:35.600Z"
+  },
+  {
+    "_id": "aud-1793705249724-rblv",
+    "userName": "System",
+    "action": "UPDATE_COURIER",
+    "entityType": "Courier",
+    "entityId": "c-001",
+    "oldValue": {
+      "_id": "c-001",
+      "name": "Google Express",
+      "serviceArea": "Inside Valley",
+      "contactPerson": "Ramesh Sharma",
+      "phone": "9801122334",
+      "defaultDeliveryCharge": 85,
+      "defaultReturnCharge": 0,
+      "status": "active",
+      "notes": "Inside Kathmandu valley deliveries. Daily 3 PM pickup.",
+      "createdAt": "2026-10-01T08:00:00.000Z",
+      "updatedAt": "2026-11-03T11:27:21.644Z",
+      "currentDue": 3000,
+      "totalParcels": 4,
+      "deliveredCount": 3,
+      "returnedCount": 1,
+      "pendingCount": 0,
+      "totalCOD": 11600
+    },
+    "newValue": {
+      "_id": "c-001",
+      "name": "Google Express",
+      "serviceArea": "Inside Valley",
+      "contactPerson": "Ramesh Sharma",
+      "phone": "9801122334",
+      "defaultDeliveryCharge": 70,
+      "defaultReturnCharge": 0,
+      "status": "active",
+      "notes": "Inside Kathmandu valley deliveries. Daily 3 PM pickup.",
+      "createdAt": "2026-10-01T08:00:00.000Z",
+      "updatedAt": "2026-11-03T11:27:25.690Z",
+      "currentDue": 3000,
+      "totalParcels": 4,
+      "deliveredCount": 3,
+      "returnedCount": 1,
+      "pendingCount": 0,
+      "totalCOD": 11600
+    },
+    "timestamp": "2026-11-03T11:27:27.708Z"
+  },
+  {
+    "_id": "aud-1793705245658-3p46",
+    "userName": "System",
+    "action": "UPDATE_COURIER",
+    "entityType": "Courier",
+    "entityId": "c-001",
+    "oldValue": {
+      "_id": "c-001",
+      "name": "Google Express",
+      "serviceArea": "Inside Valley",
+      "contactPerson": "Ramesh Sharma",
+      "phone": "9801122334",
+      "defaultDeliveryCharge": 70,
+      "defaultReturnCharge": 0,
+      "status": "active",
+      "notes": "Inside Kathmandu valley deliveries. Daily 3 PM pickup.",
+      "createdAt": "2026-10-01T08:00:00.000Z",
+      "updatedAt": "2026-11-03T08:32:03.114Z"
+    },
+    "newValue": {
+      "_id": "c-001",
+      "name": "Google Express",
+      "serviceArea": "Inside Valley",
+      "contactPerson": "Ramesh Sharma",
+      "phone": "9801122334",
+      "defaultDeliveryCharge": 85,
+      "defaultReturnCharge": 0,
+      "status": "active",
+      "notes": "Inside Kathmandu valley deliveries. Daily 3 PM pickup.",
+      "createdAt": "2026-10-01T08:00:00.000Z",
+      "updatedAt": "2026-11-03T11:27:21.644Z",
+      "currentDue": 3000,
+      "totalParcels": 4,
+      "deliveredCount": 3,
+      "returnedCount": 1,
+      "pendingCount": 0,
+      "totalCOD": 11600
+    },
+    "timestamp": "2026-11-03T11:27:23.650Z"
+  },
+  {
+    "_id": "aud-1793704175799-7k1b",
+    "userName": "Admin",
+    "action": "RECORD_PAYMENT",
+    "entityType": "Payment",
+    "entityId": "pay-1793704169775",
+    "newValue": {
+      "payment": {
+        "_id": "pay-1793704169775",
+        "settlementId": "",
+        "settlementNumber": "Unallocated Credit",
+        "allocationMethod": "unallocated_credit",
+        "allocations": [],
+        "unallocatedAmount": 5000,
+        "courierId": "c-002",
+        "courierName": "KDM Express",
+        "paymentDate": "2026-11-03",
+        "amount": 5000,
+        "paymentMethod": "eSewa",
+        "referenceNumber": "ESEWA-KDM-001",
+        "remarks": "Payment from KDM Express",
+        "recordedBy": "Admin",
+        "createdAt": "2026-11-03T11:09:29.774Z"
+      },
+      "previousOutstanding": 0,
+      "remainingOutstanding": -5000
+    },
+    "timestamp": "2026-11-03T11:09:33.793Z"
+  },
+  {
+    "_id": "aud-1793704154041-aegj",
+    "userName": "Admin",
+    "action": "RECORD_PAYMENT",
+    "entityType": "Payment",
+    "entityId": "pay-1793704147994",
+    "newValue": {
+      "payment": {
+        "_id": "pay-1793704147994",
+        "settlementId": "s-multi-01",
+        "settlementNumber": "SET-MULTI-001, SET-MULTI-002",
+        "allocationMethod": "auto_oldest",
+        "allocations": [
+          {
+            "settlementId": "s-multi-01",
+            "settlementNumber": "SET-MULTI-001",
+            "allocatedAmount": 4000
+          },
+          {
+            "settlementId": "s-multi-02",
+            "settlementNumber": "SET-MULTI-002",
+            "allocatedAmount": 3000
+          }
+        ],
+        "unallocatedAmount": 0,
+        "courierId": "c-001",
+        "courierName": "Google Express",
+        "paymentDate": "2026-11-07",
+        "amount": 7000,
+        "paymentMethod": "Bank Transfer",
+        "referenceNumber": "TRX-NABIL-MULTI",
+        "remarks": "Scenario 4 payment spanning two settlements",
+        "recordedBy": "Admin",
+        "createdAt": "2026-11-03T11:09:03.967Z"
+      },
+      "previousOutstanding": 10000,
+      "remainingOutstanding": 3000
+    },
+    "timestamp": "2026-11-03T11:09:12.023Z"
+  },
+  {
+    "_id": "aud-1793704090925-j122",
+    "userName": "Admin",
+    "action": "RECORD_PAYMENT",
+    "entityType": "Payment",
+    "entityId": "pay-1793704084884",
+    "newValue": {
+      "payment": {
+        "_id": "pay-1793704084884",
+        "settlementId": "s-1793700144071",
+        "settlementNumber": "SET-20261103-002",
+        "allocationMethod": "auto_oldest",
+        "allocations": [
+          {
+            "settlementId": "s-1793700144071",
+            "settlementNumber": "SET-20261103-002",
+            "allocatedAmount": 5800
+          }
+        ],
+        "unallocatedAmount": 0,
+        "courierId": "c-001",
+        "courierName": "Google Express",
+        "paymentDate": "2026-11-03",
+        "amount": 5800,
+        "paymentMethod": "Bank Transfer",
+        "referenceNumber": "TRX-NABIL-003",
+        "remarks": "Scenario 3 Payment of 5800",
+        "recordedBy": "Admin",
+        "createdAt": "2026-11-03T11:08:02.878Z"
+      },
+      "previousOutstanding": 5800,
+      "remainingOutstanding": 0
+    },
+    "timestamp": "2026-11-03T11:08:08.918Z"
+  },
+  {
+    "_id": "aud-1793704070598-3k46",
+    "userName": "Admin",
+    "action": "RECORD_PAYMENT",
+    "entityType": "Payment",
+    "entityId": "pay-1793704064560",
+    "newValue": {
+      "payment": {
+        "_id": "pay-1793704064560",
+        "settlementId": "s-001",
+        "settlementNumber": "SET-20261031-001",
+        "allocationMethod": "auto_oldest",
+        "allocations": [
+          {
+            "settlementId": "s-001",
+            "settlementNumber": "SET-20261031-001",
+            "allocatedAmount": 5000
+          }
+        ],
+        "unallocatedAmount": 0,
+        "courierId": "c-001",
+        "courierName": "Google Express",
+        "paymentDate": "2026-11-03",
+        "amount": 5000,
+        "paymentMethod": "Bank Transfer",
+        "referenceNumber": "TRX-NABIL-002",
+        "remarks": "Scenario 2 Payment of 5000",
+        "recordedBy": "Admin",
+        "createdAt": "2026-11-03T11:07:42.548Z"
+      },
+      "previousOutstanding": 10800,
+      "remainingOutstanding": 5800
+    },
+    "timestamp": "2026-11-03T11:07:48.586Z"
+  },
+  {
+    "_id": "aud-1793704052101-qwap",
+    "userName": "Admin",
+    "action": "RECORD_PAYMENT",
+    "entityType": "Payment",
+    "entityId": "pay-1793704046051",
+    "newValue": {
+      "payment": {
+        "_id": "pay-1793704046051",
+        "settlementId": "s-001",
+        "settlementNumber": "SET-20261031-001",
+        "allocationMethod": "auto_oldest",
+        "allocations": [
+          {
+            "settlementId": "s-001",
+            "settlementNumber": "SET-20261031-001",
+            "allocatedAmount": 20000
+          }
+        ],
+        "unallocatedAmount": 0,
+        "courierId": "c-001",
+        "courierName": "Google Express",
+        "paymentDate": "2026-11-03",
+        "amount": 20000,
+        "paymentMethod": "Bank Transfer",
+        "referenceNumber": "TRX-NABIL-001",
+        "remarks": "Scenario 1 Payment of 20000",
+        "recordedBy": "Admin",
+        "createdAt": "2026-11-03T11:07:24.041Z"
+      },
+      "previousOutstanding": 30800,
+      "remainingOutstanding": 10800
+    },
+    "timestamp": "2026-11-03T11:07:30.085Z"
+  },
+  {
+    "_id": "aud-1793701792294-asm6",
+    "userId": "u-001",
+    "userName": "Santosh Mukhiya (Admin)",
+    "action": "UPDATE_COMPANY_SETTINGS",
+    "entityType": "Settings",
+    "newValue": {
+      "companyName": "DaisyHub E-Commerce Pvt.Ltd",
+      "logoUrl": "",
+      "address": "New Baneshwor, Kathmandu, Nepal",
+      "phone": "+977-1-4789012 / 9801122334",
+      "email": "accounts@garmentsnepal.com",
+      "panVat": "609876543",
+      "footerMessage": "This is a computer-generated courier settlement statement. For any queries, contact accounts department within 7 business days.",
+      "authorizedPerson": "Santosh Mukhiya (Finance Manager)"
+    },
+    "timestamp": "2026-11-03T10:29:50.283Z"
+  },
+  {
+    "_id": "aud-1793701623912-4gup",
+    "userId": "u-001",
+    "userName": "Santosh Mukhiya (Admin)",
+    "action": "UPDATE_PARCEL",
+    "entityType": "Parcel",
+    "entityId": "p-003",
+    "newValue": {
+      "_id": "p-003",
+      "status": "Delivered",
+      "deliveryDate": "2026-11-03"
+    },
+    "timestamp": "2026-11-03T10:27:01.902Z"
+  },
+  {
+    "_id": "aud-1793701619705-y6nr",
+    "userId": "u-001",
+    "userName": "Santosh Mukhiya (Admin)",
+    "action": "UPDATE_PARCEL",
+    "entityType": "Parcel",
+    "entityId": "p-003",
+    "newValue": {
+      "_id": "p-003",
+      "status": "Delivered",
+      "deliveryDate": "2026-11-03"
+    },
+    "timestamp": "2026-11-03T10:26:57.692Z"
+  },
+  {
+    "_id": "aud-1793700152119-9a2w",
+    "userId": "u-001",
+    "userName": "Santosh Mukhiya (Admin)",
+    "action": "FINALIZE_SETTLEMENT",
+    "entityType": "Settlement",
+    "entityId": "s-1793700144071",
+    "newValue": {
+      "settlementNumber": "SET-20261103-002",
+      "courierName": "Google Express",
+      "grossCOD": 5700,
+      "totalReceivable": 31000,
+      "remainingDue": 31000,
+      "totalPaid": 0
+    },
+    "timestamp": "2026-11-03T10:02:30.113Z"
+  },
+  {
+    "_id": "aud-1793697226540-95or",
+    "userId": "u-001",
+    "userName": "Santosh Mukhiya (Admin)",
+    "action": "RECORD_PAYMENT",
+    "entityType": "Payment",
+    "entityId": "pay-1793697220512",
+    "newValue": {
+      "_id": "pay-1793697220512",
+      "settlementId": "",
+      "settlementNumber": "",
+      "courierId": "c-003",
+      "courierName": "SP Express",
+      "paymentDate": "2026-11-03",
+      "amount": 54999,
+      "paymentMethod": "Bank Transfer",
+      "referenceNumber": "",
+      "remarks": "",
+      "recordedBy": "Santosh Mukhiya (Admin)",
+      "createdAt": "2026-11-03T09:13:40.512Z"
+    },
+    "timestamp": "2026-11-03T09:13:44.528Z"
+  },
+  {
+    "_id": "aud-1793695605215-bq5x",
+    "userName": "Staff",
+    "action": "REVERT_RETURN",
+    "entityType": "Parcel",
+    "entityId": "p-005",
+    "newValue": {
+      "newStatus": "Pending"
+    },
+    "timestamp": "2026-11-03T08:46:43.211Z"
+  },
+  {
+    "_id": "aud-1793695570153-pymq",
+    "userName": "Staff",
+    "action": "PROCESS_RETURNS",
+    "entityType": "Parcel",
+    "entityId": "1 parcels",
+    "newValue": {
+      "courierId": "c-001",
+      "count": 1,
+      "adjustedCOD": 1100,
+      "returnReason": "Customer Refused",
+      "returnDate": "2026-11-03"
+    },
+    "timestamp": "2026-11-03T08:46:08.145Z"
+  },
+  {
+    "_id": "aud-1793694727139-nnbq",
+    "userId": "u-001",
+    "userName": "Santosh Mukhiya (Admin)",
+    "action": "UPDATE_COURIER",
+    "entityType": "Courier",
+    "entityId": "c-001",
+    "oldValue": {
+      "_id": "c-001",
+      "name": "Google Express",
+      "serviceArea": "Inside Valley",
+      "contactPerson": "Ramesh Sharma",
+      "phone": "9801122334",
+      "defaultDeliveryCharge": 150,
+      "defaultReturnCharge": 0,
+      "status": "active",
+      "notes": "Inside Kathmandu valley deliveries. Daily 3 PM pickup.",
+      "createdAt": "2026-10-01T08:00:00.000Z",
+      "updatedAt": "2026-11-03T07:29:09.173Z"
+    },
+    "newValue": {
+      "_id": "c-001",
+      "name": "Google Express",
+      "serviceArea": "Inside Valley",
+      "contactPerson": "Ramesh Sharma",
+      "phone": "9801122334",
+      "defaultDeliveryCharge": 70,
+      "defaultReturnCharge": 0,
+      "status": "active",
+      "notes": "Inside Kathmandu valley deliveries. Daily 3 PM pickup.",
+      "createdAt": "2026-10-01T08:00:00.000Z",
+      "updatedAt": "2026-11-03T08:32:03.114Z"
+    },
+    "timestamp": "2026-11-03T08:32:05.129Z"
+  },
+  {
+    "_id": "aud-1793691469179-i3tk",
+    "userName": "System",
+    "action": "DELETE_COURIER",
+    "entityType": "Courier",
+    "entityId": "c-1793691461103",
+    "timestamp": "2026-11-03T07:37:47.171Z"
+  },
+  {
+    "_id": "aud-1793691465119-eza2",
+    "userName": "System",
+    "action": "CREATE_COURIER",
+    "entityType": "Courier",
+    "entityId": "c-1793691461103",
+    "newValue": {
+      "_id": "c-1793691461103",
+      "name": "Test Delete Courier",
+      "serviceArea": "Inside Valley",
+      "contactPerson": "",
+      "phone": "",
+      "defaultDeliveryCharge": 100,
+      "defaultReturnCharge": 0,
+      "status": "active",
+      "notes": "",
+      "createdAt": "2026-11-03T07:37:41.103Z",
+      "updatedAt": "2026-11-03T07:37:41.103Z"
+    },
+    "timestamp": "2026-11-03T07:37:43.117Z"
+  },
+  {
+    "_id": "aud-1793691238081-i66q",
+    "userId": "u-001",
+    "userName": "Santosh Mukhiya (Admin)",
+    "action": "UPDATE_COURIER",
+    "entityType": "Courier",
+    "entityId": "c-004",
+    "oldValue": {
+      "_id": "c-004",
+      "name": "Courier 4 — Outside Valley (Aramex Nepal)",
+      "serviceArea": "Outside Valley",
+      "contactPerson": "Sunil KC",
+      "phone": "9841223344",
+      "defaultDeliveryCharge": 220,
+      "defaultReturnCharge": 110,
+      "status": "active",
+      "notes": "All major districts outside Kathmandu valley (Pokhara, Biratnagar, Narayangarh).",
+      "createdAt": "2026-10-01T08:00:00.000Z",
+      "updatedAt": "2026-10-01T08:00:00.000Z"
+    },
+    "newValue": {
+      "_id": "c-004",
+      "name": "Nepal Can Move",
+      "serviceArea": "Outside Valley",
+      "contactPerson": "Sunil KC",
+      "phone": "9841223344",
+      "defaultDeliveryCharge": 250,
+      "defaultReturnCharge": 0,
+      "status": "active",
+      "notes": "All major districts outside Kathmandu valley (Pokhara, Biratnagar, Narayangarh).",
+      "createdAt": "2026-10-01T08:00:00.000Z",
+      "updatedAt": "2026-11-03T07:33:54.068Z"
+    },
+    "timestamp": "2026-11-03T07:33:56.076Z"
+  },
+  {
+    "_id": "aud-1793691145053-8pgi",
+    "userId": "u-001",
+    "userName": "Santosh Mukhiya (Admin)",
+    "action": "UPDATE_COURIER",
+    "entityType": "Courier",
+    "entityId": "c-003",
+    "oldValue": {
+      "_id": "c-003",
+      "name": "Courier 3 — Inside Valley (Upaya Cargo)",
+      "serviceArea": "Inside Valley",
+      "contactPerson": "Bikash Shrestha",
+      "phone": "9821223344",
+      "defaultDeliveryCharge": 95,
+      "defaultReturnCharge": 45,
+      "status": "active",
+      "notes": "Express inner city small parcel deliveries.",
+      "createdAt": "2026-10-01T08:00:00.000Z",
+      "updatedAt": "2026-10-01T08:00:00.000Z"
+    },
+    "newValue": {
+      "_id": "c-003",
+      "name": "SP Express",
+      "serviceArea": "Inside Valley",
+      "contactPerson": "Bikash Shrestha",
+      "phone": "9821223344",
+      "defaultDeliveryCharge": 150,
+      "defaultReturnCharge": 0,
+      "status": "active",
+      "notes": "Express inner city small parcel deliveries.",
+      "createdAt": "2026-10-01T08:00:00.000Z",
+      "updatedAt": "2026-11-03T07:32:21.047Z"
+    },
+    "timestamp": "2026-11-03T07:32:23.050Z"
+  },
+  {
+    "_id": "aud-1793690990027-i6mu",
+    "userId": "u-001",
+    "userName": "Santosh Mukhiya (Admin)",
+    "action": "UPDATE_COURIER",
+    "entityType": "Courier",
+    "entityId": "c-002",
+    "oldValue": {
+      "_id": "c-002",
+      "name": "Courier 2 — Inside Valley (Nepal Can Move)",
+      "serviceArea": "Inside Valley",
+      "contactPerson": "Sita Thapa",
+      "phone": "9811223344",
+      "defaultDeliveryCharge": 110,
+      "defaultReturnCharge": 55,
+      "status": "active",
+      "notes": "Ring road & sub-valley coverage (Bhaktapur, Lalitpur).",
+      "createdAt": "2026-10-01T08:00:00.000Z",
+      "updatedAt": "2026-10-01T08:00:00.000Z"
+    },
+    "newValue": {
+      "_id": "c-002",
+      "name": "KDM Express",
+      "serviceArea": "Inside Valley",
+      "contactPerson": "Sita Thapa",
+      "phone": "9811223344",
+      "defaultDeliveryCharge": 150,
+      "defaultReturnCharge": 0,
+      "status": "active",
+      "notes": "Ring road & sub-valley coverage (Bhaktapur, Lalitpur).",
+      "createdAt": "2026-10-01T08:00:00.000Z",
+      "updatedAt": "2026-11-03T07:29:46.015Z"
+    },
+    "timestamp": "2026-11-03T07:29:48.020Z"
+  },
+  {
+    "_id": "aud-1793690953186-k6mh",
+    "userId": "u-001",
+    "userName": "Santosh Mukhiya (Admin)",
+    "action": "UPDATE_COURIER",
+    "entityType": "Courier",
+    "entityId": "c-001",
+    "oldValue": {
+      "_id": "c-001",
+      "name": "Courier 1 — Inside Valley (Pathao)",
+      "serviceArea": "Inside Valley",
+      "contactPerson": "Ramesh Sharma",
+      "phone": "9801122334",
+      "defaultDeliveryCharge": 100,
+      "defaultReturnCharge": 50,
+      "status": "active",
+      "notes": "Inside Kathmandu valley deliveries. Daily 3 PM pickup.",
+      "createdAt": "2026-10-01T08:00:00.000Z",
+      "updatedAt": "2026-10-01T08:00:00.000Z"
+    },
+    "newValue": {
+      "_id": "c-001",
+      "name": "Google Express",
+      "serviceArea": "Inside Valley",
+      "contactPerson": "Ramesh Sharma",
+      "phone": "9801122334",
+      "defaultDeliveryCharge": 150,
+      "defaultReturnCharge": 0,
+      "status": "active",
+      "notes": "Inside Kathmandu valley deliveries. Daily 3 PM pickup.",
+      "createdAt": "2026-10-01T08:00:00.000Z",
+      "updatedAt": "2026-11-03T07:29:09.173Z"
+    },
+    "timestamp": "2026-11-03T07:29:11.178Z"
+  },
+  {
+    "_id": "aud-1793690752310-7k48",
+    "userName": "Staff",
+    "action": "BULK_PARCEL_ENTRY",
+    "entityType": "Batch",
+    "entityId": "b-1793690746294",
+    "newValue": {
+      "batchNumber": "BAT-TEST-001",
+      "totalPackages": 1,
+      "totalCOD": 1500,
+      "courierName": "Courier 1 — Inside Valley (Pathao)"
+    },
+    "timestamp": "2026-11-03T07:25:50.303Z"
+  },
+  {
+    "_id": "aud-1793690200982-tqye",
+    "userId": "u-001",
+    "userName": "Santosh Mukhiya (Admin)",
+    "action": "USER_LOGIN",
+    "entityType": "User",
+    "entityId": "u-001",
+    "newValue": {
+      "email": "admin@courier.com",
+      "role": "admin"
+    },
+    "timestamp": "2026-11-03T07:16:39.265Z"
+  }
+]
